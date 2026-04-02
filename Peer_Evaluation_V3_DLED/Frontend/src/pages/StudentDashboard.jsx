@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileMenu from '../components/User/ProfileMenu';
+import AnnouncementBanner from '../components/AnnouncementBanner';
+import { AppContext } from '../utils/AppContext';
+import { useContext } from 'react';
 import '../styles/Student/StudentDashboard.css';
 import EnrolledCoursesSection from '../components/Student/EnrolledCoursesSection';
 import EnrollmentRequestSection from '../components/Student/EnrollmentRequestSection';
@@ -12,7 +15,7 @@ import StudentExamHistoryOverlay from '../components/Student/StudentExamHistoryO
 import TAPanel from '../components/TA/TAPanel';
 import TAEvalOverlay from '../components/TA/TAEvalOverlay';
 import { containerStyle, sidebarStyle, mainStyle, contentStyle, sidebarToggleBtnStyle, buttonStyle, sectionHeading } from '../styles/Student/StudentDashboard.js'
-import { FaBook, FaClipboardList, FaLaptopCode } from 'react-icons/fa';
+import { FaBook, FaClipboardList, FaLaptopCode, FaHome, FaFileAlt, FaChartBar, FaUserGraduate, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
 import { showMessage } from '../utils/Message';
 
 export default function StudentDashboard() {
@@ -54,6 +57,7 @@ export default function StudentDashboard() {
   const [examHistoryOverlayOpen, setExamHistoryOverlayOpen] = useState(false);
   const [completedExams, setCompletedExams] = useState([]);
   const navigate = useNavigate();
+  const { darkMode, toggleDarkMode, announcement, announcementDismissed, dismissAnnouncement } = useContext(AppContext);
 
   useEffect(() => {
     document.body.style.background = '';
@@ -311,6 +315,8 @@ export default function StudentDashboard() {
       const data = await response.json();
       if (response.ok) {
         showMessage(data.message, 'success');
+        // Mark the course as pending in the local state instead of removing it
+        setAvailableCourses(prev => prev.map(c => c._id === selectedCourse ? { ...c, enrollmentStatus: 'pending' } : c));
       } else {
         showMessage(data.message || 'Failed to send enrollment request.', 'error');
       }
@@ -712,13 +718,31 @@ export default function StudentDashboard() {
 
   const handleSidebarToggle = () => setSidebarOpen(open => !open);
 
+  const playTick = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.08);
+    } catch (_) {}
+  };
+
   return (
     <div
       className={`student-dashboard-bg${sidebarOpen ? ' sidebar-open' : ''}`}
       style={{
         minHeight: '100vh',
         width: '100vw',
-        background: 'linear-gradient(135deg, #ece9f7 0%, #c3cfe2 100%)',
+        background: darkMode
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e2d4a 100%)'
+          : 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
         display: 'flex',
         flexDirection: 'row',
         position: 'fixed',
@@ -743,35 +767,19 @@ export default function StudentDashboard() {
         display: 'flex',
         alignItems: 'center',
       }}>
-        <ProfileMenu user={user} onLogout={logout} onProfile={() => setActiveTab('profile')} />
+        <ProfileMenu
+          user={user}
+          onLogout={logout}
+          onProfile={() => setActiveTab('profile')}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          onAvatarUpdate={(url) => setUser(prev => ({ ...prev, profilePicture: url }))}
+        />
       </div>
 
-      {/* Sidebar Toggle Button */}
-      <button
-        className="sidebar-toggle-btn"
-        style={{
-          position: 'absolute',
-          top: '1rem',
-          left: '1rem',
-          zIndex: 999,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: '0.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.3rem',
-          alignItems: 'center',
-        }}
-        onClick={handleSidebarToggle}
-        aria-label="Toggle sidebar"
-      >
-        <span style={{ width: '30px', height: '3px', background: 'white', borderRadius: '2px' }}></span>
-        <span style={{ width: '30px', height: '3px', background: 'white', borderRadius: '2px' }}></span>
-        <span style={{ width: '30px', height: '3px', background: 'white', borderRadius: '2px' }}></span>
-      </button>
+      {/* Sidebar toggle moved inside sidebar */}
 
-      {/* Sidebar (collapsible) */}
+      {/* Sidebar */}
       <div
         className={`student-dashboard-sidebar${sidebarOpen ? ' open' : ' collapsed'}`}
         style={{
@@ -779,26 +787,88 @@ export default function StudentDashboard() {
           position: 'relative',
           height: 'auto',
           minHeight: '100vh',
-          zIndex: 1,
-          width: sidebarOpen ? '250px' : '60px',
-          transition: 'width 0.3s ease',
+          zIndex: 1000,
+          width: sidebarOpen ? '230px' : '64px',
+          transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+          overflow: 'hidden',
+          padding: '1.25rem 0.75rem',
+          gap: '0.2rem',
         }}
-        onClick={() => setSidebarOpen(!sidebarOpen)}
       >
-        <h2 style={{ fontSize: sidebarOpen ? '1.6rem' : '0', fontWeight: 'bold', marginBottom: sidebarOpen ? '1rem' : '0', overflow: 'hidden', whiteSpace: 'nowrap' }}>Student Panel</h2>
-        {sidebarOpen && (
-          <>
-            <button onClick={() => setActiveTab('home')} style={buttonStyle(activeTab === 'home')}>🏠 Home</button>
-            <button onClick={() => setActiveTab('course')} style={buttonStyle(activeTab === 'course')}>📚 Courses & Enrollment</button>
-            <button onClick={() => setActiveTab('exam')} style={buttonStyle(activeTab === 'exam')}>📋 Exams</button>
-            <button onClick={() => setActiveTab('evaluation')} style={buttonStyle(activeTab === 'evaluation')}>📝 Evaluations</button>
-            <button onClick={() => setActiveTab('result')} style={buttonStyle(activeTab === 'result')}>📊 Results</button>
-            {user.isTA && (
-              <button onClick={() => setActiveTab('ta')} style={buttonStyle(activeTab === 'ta')}>🧑‍🏫 TA Panel</button>
-            )}
-            <button onClick={logout} style={{ marginTop: 'auto', ...buttonStyle(false) }}>🚪 Logout</button>
-          </>
-        )}
+        {/* Header / Toggle button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', padding: '0 0.1rem' }}>
+          <button
+            onClick={() => setSidebarOpen(o => !o)}
+            title={sidebarOpen ? 'Collapse' : 'Expand'}
+            style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(255,255,255,0.13)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer', color: 'white', transition: 'background 0.2s' }}
+          >
+            {sidebarOpen ? <FaTimes size={14} /> : <FaBars size={14} />}
+          </button>
+          <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'rgba(255,255,255,0.92)', whiteSpace: 'nowrap', overflow: 'hidden', opacity: sidebarOpen ? 1 : 0, maxWidth: sidebarOpen ? '160px' : '0', transition: 'opacity 0.2s, max-width 0.3s' }}>
+            Student Panel
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 0 0.6rem' }} />
+
+        {/* Nav items */}
+        {[
+          { tab: 'home',       label: 'Home',        Icon: FaHome },
+          { tab: 'course',     label: 'Courses',     Icon: FaBook },
+          { tab: 'exam',       label: 'Exams',       Icon: FaFileAlt },
+          { tab: 'evaluation', label: 'Evaluations', Icon: FaClipboardList },
+          { tab: 'result',     label: 'Results',     Icon: FaChartBar },
+          ...(user.isTA ? [{ tab: 'ta', label: 'TA Panel', Icon: FaUserGraduate }] : []),
+        ].map(({ tab, label, Icon }) => (
+          <button
+            key={tab}
+            onClick={() => { playTick(); setActiveTab(tab); }}
+            title={!sidebarOpen ? label : undefined}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.85rem',
+              width: '100%', boxSizing: 'border-box', border: 'none',
+              borderLeft: activeTab === tab ? '3px solid rgba(255,255,255,0.88)' : '3px solid transparent',
+              borderRadius: '10px', padding: '0.68rem 0.75rem', cursor: 'pointer',
+              whiteSpace: 'nowrap', overflow: 'hidden', textAlign: 'left',
+              background: activeTab === tab ? 'rgba(255,255,255,0.15)' : 'transparent',
+              color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.68)',
+              fontWeight: activeTab === tab ? 700 : 400, fontSize: '0.9rem',
+              transition: 'background 0.2s, color 0.2s, border-left 0.2s',
+            }}
+          >
+            <Icon size={17} style={{ flexShrink: 0 }} />
+            <span style={{ opacity: sidebarOpen ? 1 : 0, maxWidth: sidebarOpen ? '150px' : '0', transition: 'opacity 0.2s, max-width 0.3s', overflow: 'hidden' }}>
+              {label}
+            </span>
+          </button>
+        ))}
+
+        {/* Spacer pushes logout to bottom */}
+        <div style={{ flex: 1 }} />
+
+        {/* Bottom divider */}
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          title={!sidebarOpen ? 'Logout' : undefined}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.85rem',
+            width: '100%', boxSizing: 'border-box',
+            border: 'none', borderLeft: '3px solid transparent',
+            borderRadius: '10px', padding: '0.68rem 0.75rem', cursor: 'pointer',
+            background: 'transparent', color: 'rgba(255,160,160,0.85)',
+            fontWeight: 500, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden',
+            transition: 'background 0.2s, color 0.2s',
+          }}
+        >
+          <FaSignOutAlt size={17} style={{ flexShrink: 0 }} />
+          <span style={{ opacity: sidebarOpen ? 1 : 0, maxWidth: sidebarOpen ? '120px' : '0', transition: 'opacity 0.2s, max-width 0.3s', overflow: 'hidden' }}>
+            Logout
+          </span>
+        </button>
       </div>
 
       {/* Main Content */}
@@ -811,53 +881,86 @@ export default function StudentDashboard() {
           justifyContent: 'center',
         }}
       >
+        {announcement && !announcementDismissed && (
+          <AnnouncementBanner message={announcement.message} onDismiss={dismissAnnouncement} />
+        )}
         <div className="student-dashboard-content" style={{
           ...contentStyle,
-          background: 'rgba(255,255,255,0.92)', // subtle card background
-          boxShadow: '0 8px 32px rgba(60,60,120,0.18)', // slightly stronger shadow
-          border: '1.5px solid #e3e6f0', // soft border for contrast
+          background: darkMode ? 'rgba(15,23,42,0.97)' : 'rgba(255,255,255,0.97)',
+          boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(30,58,138,0.12)',
+          border: darkMode ? '1.5px solid rgba(59,130,246,0.2)' : '1.5px solid rgba(147,197,253,0.4)',
           maxWidth: 'none',
           width: '100%',
           height: '80vh',
           minHeight: '500px',
           margin: 'auto',
-          display: 'block',
-          padding: '3rem 4rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          padding: '2.5rem 3rem',
           minWidth: '950px',
+          overflowY: 'auto',
           overflowX: 'auto',
           scrollbarWidth: 'thin',
-          scrollbarColor: ' #4b3c70 transparent',
+          scrollbarColor: '#93c5fd transparent',
         }}>
           {activeTab === 'home' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', color: '#3f3d56' }}>
-              <h2 style={{ ...sectionHeading, textAlign: 'center', marginBottom: '2rem' }}>
-                Welcome to the Student Dashboard
-              </h2>
-              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
-                {/* Courses Enrolled Card */}
-                <div style={{ textAlign: 'center', padding: '1rem', borderRadius: '12px', background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '200px', color: '#fff' }}>
-                  <FaBook size={40} style={{ marginBottom: '0.5rem' }} />
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Courses Enrolled</h3>
-                  <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}> {dashboardStats.courses} </p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', color: darkMode ? '#e0f2fe' : '#1e3a8a' }}>
+              {/* Greeting */}
+              <div style={{ marginBottom: '1.75rem' }}>
+                <h2 style={{ ...sectionHeading, textAlign: 'left', marginBottom: '0.35rem' }}>
+                  Welcome back, {user.name ? user.name.split(' ')[0] : 'Student'} 👋
+                </h2>
+                <p style={{ margin: 0, color: darkMode ? '#7dd3fc' : '#64748b', fontSize: '0.95rem' }}>
+                  Here's a snapshot of your academic activity.
+                </p>
+              </div>
+
+              {/* Stat Cards */}
+              <div style={{ display: 'flex', gap: '1.25rem', width: '100%', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
+                <div className="dashboard-card" style={{ flex: '1 1 150px', textAlign: 'center', padding: '1.5rem 1rem', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', boxShadow: '0 8px 24px rgba(59,130,246,0.35)', color: '#fff' }}>
+                  <FaBook size={30} style={{ marginBottom: '0.6rem', opacity: 0.88 }} />
+                  <p style={{ fontSize: '0.7rem', fontWeight: 600, margin: '0 0 0.4rem', opacity: 0.78, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Courses Enrolled</p>
+                  <p style={{ fontWeight: 800, fontSize: '2.4rem', margin: 0, lineHeight: 1 }}>{dashboardStats.courses}</p>
                 </div>
-                {/* Pending Evaluations Card */}
-                <div style={{ textAlign: 'center', padding: '1rem', borderRadius: '12px', background: 'linear-gradient(135deg, #32cd32, #125e12)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '230px', color: '#fff' }}>
-                  <FaClipboardList size={40} style={{ marginBottom: '0.5rem' }} />
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Pending Evaluations</h3>
-                  <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}> {dashboardStats.pendingEvaluations} </p>
+                <div className="dashboard-card" style={{ flex: '1 1 150px', textAlign: 'center', padding: '1.5rem 1rem', borderRadius: '16px', background: 'linear-gradient(135deg, #11998e, #38ef7d)', boxShadow: '0 8px 24px rgba(17,153,142,0.3)', color: '#fff' }}>
+                  <FaClipboardList size={30} style={{ marginBottom: '0.6rem', opacity: 0.88 }} />
+                  <p style={{ fontSize: '0.7rem', fontWeight: 600, margin: '0 0 0.4rem', opacity: 0.78, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Pending Evaluations</p>
+                  <p style={{ fontWeight: 800, fontSize: '2.4rem', margin: 0, lineHeight: 1 }}>{dashboardStats.pendingEvaluations}</p>
                 </div>
-                {/* Active Exams Card */}
-                <div style={{ textAlign: 'center', padding: '1rem', borderRadius: '12px', background: 'linear-gradient(135deg, #43cea2, #185a9d)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '200px', color: '#fff' }}>
-                  <FaLaptopCode size={40} style={{ marginBottom: '0.5rem' }} />
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Active Exams</h3>
-                  <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}> {dashboardStats.activeExams} </p>
+                <div className="dashboard-card" style={{ flex: '1 1 150px', textAlign: 'center', padding: '1.5rem 1rem', borderRadius: '16px', background: 'linear-gradient(135deg, #43cea2, #185a9d)', boxShadow: '0 8px 24px rgba(67,206,162,0.3)', color: '#fff' }}>
+                  <FaLaptopCode size={30} style={{ marginBottom: '0.6rem', opacity: 0.88 }} />
+                  <p style={{ fontSize: '0.7rem', fontWeight: 600, margin: '0 0 0.4rem', opacity: 0.78, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Active Exams</p>
+                  <p style={{ fontWeight: 800, fontSize: '2.4rem', margin: 0, lineHeight: 1 }}>{dashboardStats.activeExams}</p>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div style={{ width: '100%', background: darkMode ? 'rgba(15,23,42,0.7)' : 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '14px', padding: '1.25rem 1.5rem', border: darkMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(147,197,253,0.35)' }}>
+                <p style={{ margin: '0 0 0.8rem', fontSize: '0.73rem', fontWeight: 700, color: darkMode ? '#7dd3fc' : '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Quick Actions</p>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  {[
+                    { label: '📚 Courses',     tab: 'course' },
+                    { label: '📋 Exams',        tab: 'exam' },
+                    { label: '📝 Evaluations',  tab: 'evaluation' },
+                    { label: '📊 Results',      tab: 'result' },
+                  ].map(({ label, tab }) => (
+                    <button
+                      key={tab}
+                      onClick={() => { playTick(); setActiveTab(tab); }}
+                      style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: darkMode ? '1.5px solid rgba(59,130,246,0.3)' : '1.5px solid rgba(147,197,253,0.5)', background: darkMode ? 'rgba(30,58,138,0.4)' : '#fff', color: darkMode ? '#93c5fd' : '#1e3a8a', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 2px 6px rgba(30,58,138,0.08)', transition: 'box-shadow 0.15s' }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'profile' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#2d3559', height: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: darkMode ? '#e0f2fe' : '#1e3a8a', height: '100%' }}>
               <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'left' }}>Profile</h2>
               <p style={{ fontSize: '1.2rem', margin: '0.5rem 0' }}><strong>Name:</strong> {user.name}</p>
               <p style={{ fontSize: '1.2rem', margin: '0.5rem 0' }}><strong>Email:</strong> {user.email}</p>
@@ -887,32 +990,24 @@ export default function StudentDashboard() {
           )}
 
           {activeTab === 'course' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#2d3559', width: '100%' }}>
-              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'center', color: ' #4b3c70', width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', color: '#2d3559', width: '100%', gap: '2rem' }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: 0, textAlign: 'center', color: ' #4b3c70', width: '100%' }}>
                 Courses & Enrollment
               </h2>
 
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '1rem',
-                justifyContent: 'center',
-                width: '100%'
-              }}>
-                {/* Enrolled Courses Section */}
-                <EnrolledCoursesSection enrolledCourses={enrolledCourses} />
+              {/* Enrolled Courses Section */}
+              <EnrolledCoursesSection enrolledCourses={enrolledCourses} />
 
-                {/* Enrollment Request Section */}
-                <EnrollmentRequestSection
-                  availableCourses={availableCourses}
-                  selectedCourse={selectedCourse}
-                  setSelectedCourse={setSelectedCourse}
-                  availableBatches={availableBatches}
-                  selectedBatch={selectedBatch}
-                  setSelectedBatch={setSelectedBatch}
-                  handleEnrollmentRequest={handleEnrollmentRequest}
-                />
-              </div>
+              {/* Available Courses Cards */}
+              <EnrollmentRequestSection
+                availableCourses={availableCourses}
+                selectedCourse={selectedCourse}
+                setSelectedCourse={setSelectedCourse}
+                availableBatches={availableBatches}
+                selectedBatch={selectedBatch}
+                setSelectedBatch={setSelectedBatch}
+                handleEnrollmentRequest={handleEnrollmentRequest}
+              />
             </div>
           )}
           

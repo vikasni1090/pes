@@ -466,11 +466,15 @@ export const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials!' });
 
+    user.lastLogin = new Date();
+    await user.save();
+
     res.status(200).json({
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      lastLogin: user.lastLogin,
       token: generateToken(user._id, user.role)
     });
   } catch (error) {
@@ -486,7 +490,9 @@ export const getProfile = async (req, res) => {
     name: req.user.name,
     email: req.user.email,
     role: req.user.role,
-    isTA: req.user.isTA
+    isTA: req.user.isTA,
+    profilePicture: req.user.profilePicture,
+    lastLogin: req.user.lastLogin,
   });
 };
 

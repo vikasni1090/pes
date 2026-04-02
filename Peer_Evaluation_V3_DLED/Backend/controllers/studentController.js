@@ -86,8 +86,22 @@ export const getEnrolledCourses = async (req, res) => {
 
 export const getAvailableCourses = async (req, res) => {
   try {
-    const courses = await Course.find({});
-    res.json(courses);
+    const studentId = req.user._id;
+    // Find active enrollments (already in course — exclude entirely)
+    const activeEnrollments = await Enrollment.find({ student: studentId, status: 'active' }).select('course');
+    const activeCourseIds = activeEnrollments.map(e => e.course.toString());
+
+    // Find pending enrollments (requested but not yet approved)
+    const pendingEnrollments = await Enrollment.find({ student: studentId, status: 'pending' }).select('course');
+    const pendingCourseIds = pendingEnrollments.map(e => e.course.toString());
+
+    // Return courses not actively enrolled, tagged with pending status
+    const courses = await Course.find({ _id: { $nin: activeCourseIds } });
+    const result = courses.map(c => ({
+      ...c.toObject(),
+      enrollmentStatus: pendingCourseIds.includes(c._id.toString()) ? 'pending' : 'none',
+    }));
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch available courses' });
   }

@@ -1,5 +1,6 @@
-/* Responsive styles */
+/* AdminDashboard.css — improved styles */
 
+/* ── Reset & base ─────────────────────────────────────────────── */
 html, body, #root {
     height: 100%;
     width: 100%;
@@ -12,6 +13,8 @@ html, body, #root {
 body {
     background: none !important;
 }
+
+/* ── Background wrapper ───────────────────────────────────────── */
 .admin-dashboard-bg {
     min-height: 100vh;
     width: 100vw;
@@ -25,75 +28,355 @@ body {
     box-sizing: border-box;
     overflow: hidden;
 }
+
+/* ── Layout container ─────────────────────────────────────────── */
 .admin-dashboard-container {
     display: flex;
     min-height: 100vh;
     width: 100%;
     position: relative;
 }
+
+/* ── Sidebar ──────────────────────────────────────────────────── */
 .admin-dashboard-sidebar {
     position: relative;
     top: 0;
     left: 0;
     height: auto;
     min-height: 100vh;
-    z-index: 1;
+    z-index: 100;
+    transition: width 0.3s ease, left 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
 }
+
+/* Pill-shaped nav items */
+.admin-dashboard-sidebar button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    background: transparent;
+    color: inherit;
+    transition: background 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+}
+
+.admin-dashboard-sidebar button:hover {
+    background: rgba(102, 126, 234, 0.13);
+    padding-left: 1.3rem;
+    color: #4b3c70;
+}
+
+/* Active nav item — gradient + left accent border */
+.admin-dashboard-sidebar button.active,
+.admin-dashboard-sidebar button[data-active="true"] {
+    background: linear-gradient(90deg, #667eea20, #764ba220);
+    border-left: 3px solid #667eea;
+    padding-left: calc(1rem - 3px);
+    color: #3f3d56;
+    font-weight: 700;
+}
+
+/* ── Sidebar toggle button ────────────────────────────────────── */
 .sidebar-toggle-btn {
     display: none;
 }
+
+.sidebar-toggle-btn span {
+    display: block;
+    width: 30px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    transform-origin: center;
+}
+
+/* Animated hamburger → X when sidebar is open */
+.admin-dashboard-bg.sidebar-open .sidebar-toggle-btn span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+.admin-dashboard-bg.sidebar-open .sidebar-toggle-btn span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+.admin-dashboard-bg.sidebar-open .sidebar-toggle-btn span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+/* ── Main content area ────────────────────────────────────────── */
 .admin-dashboard-main {
     flex: 1;
     margin-left: 0;
-    transition: margin-left 0.3s;
+    transition: margin-left 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
+
+/* ── Content card ─────────────────────────────────────────────── */
+.admin-dashboard-content {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    transition: box-shadow 0.2s ease;
+}
+
+.admin-dashboard-content:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Dashboard stat cards ─────────────────────────────────────── */
+.dashboard-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* ── Admin stats grid ─────────────────────────────────────────── */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    width: 100%;
+    margin-bottom: 2rem;
+}
+
+.admin-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    text-align: center;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.admin-stat-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.admin-stat-card p {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+}
+
+/* ── Admin tables ─────────────────────────────────────────────── */
+.admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.admin-table th {
+    background-color: #4b3c70;
+    color: #fff;
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.admin-table th:last-child {
+    border-right: none;
+}
+
+.admin-table td {
+    padding: 11px 14px;
+    text-align: left;
+    color: #3f3d56;
+    font-size: 0.93rem;
+    border-bottom: 1px solid #e8e4f0;
+    transition: background 0.15s ease;
+}
+
+.admin-table tbody tr:hover td {
+    background: rgba(102, 126, 234, 0.06);
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table tbody tr:nth-child(even) td {
+    background: #faf9fd;
+}
+.admin-table tbody tr:nth-child(even):hover td {
+    background: rgba(102, 126, 234, 0.08);
+}
+
+/* ── Tab navigation ───────────────────────────────────────────── */
+.tab-nav {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 2px solid #e3e6f0;
+    margin-bottom: 1.5rem;
+}
+
+.tab-nav-item {
+    position: relative;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #6b7280;
+    border-radius: 8px 8px 0 0;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.tab-nav-item:hover {
+    color: #4b3c70;
+    background: rgba(102, 126, 234, 0.06);
+}
+
+.tab-nav-item.active {
+    color: #667eea;
+    font-weight: 700;
+}
+
+/* Gradient underline for active tab */
+.tab-nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 3px 3px 0 0;
+}
+
+/* ── Section card shadows ─────────────────────────────────────── */
+.section-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    background: #fff;
+    padding: 1.5rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.section-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Responsive — tablet ──────────────────────────────────────── */
 @media (max-width: 900px) {
     .admin-dashboard-sidebar {
-    width: 220px;
-    padding: 1.5rem 0.75rem;
+        width: 220px;
+        padding: 1.5rem 0.75rem;
     }
     .admin-dashboard-main {
-    margin-left: 220px;
-    padding: 1rem;
+        margin-left: 220px;
+        padding: 1rem;
+    }
+    .admin-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
     }
 }
+
+/* ── Responsive — mobile ──────────────────────────────────────── */
 @media (max-width: 700px) {
     .admin-dashboard-sidebar {
-    left: -260px;
-    width: 220px;
-    border-radius: 0 20px 20px 0;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
-    transition: left 0.3s;
+        position: fixed;
+        left: -260px;
+        width: 220px;
+        border-radius: 0 20px 20px 0;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+        transition: left 0.3s ease, box-shadow 0.3s ease;
     }
+
     .admin-dashboard-sidebar.open {
-    left: 0;
+        left: 0;
+        box-shadow: 6px 0 24px rgba(75, 60, 112, 0.22);
     }
+
     .sidebar-toggle-btn {
-    display: block;
-    position: fixed;
-    top: 1.2rem;
-    left: 1.2rem;
-    z-index: 1100;
-    background: #3f3d56;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 0.8rem;
-    cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        position: fixed;
+        top: 1.2rem;
+        left: 1.2rem;
+        z-index: 1100;
+        background: #3f3d56;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 0.7rem;
+        cursor: pointer;
+        align-items: center;
+        transition: background 0.2s ease;
     }
+
+    .sidebar-toggle-btn:hover {
+        background: #667eea;
+    }
+
     .admin-dashboard-main {
-    margin-left: 0;
-    padding: 1rem;
-    transition: margin-left 0.3s;
+        margin-left: 0;
+        padding: 1rem;
+        transition: margin-left 0.3s ease;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
 }
+
+/* ── Responsive — small mobile ────────────────────────────────── */
 @media (max-width: 600px) {
     .admin-dashboard-content {
-    padding: 1rem;
-    max-width: 100%;
+        padding: 1rem;
+        max-width: 100%;
     }
     .admin-dashboard-sidebar {
-    padding: 1rem 0.5rem;
-    width: 180px;
+        padding: 1rem 0.5rem;
+        width: 180px;
+    }
+    .admin-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+    }
+    .admin-table th,
+    .admin-table td {
+        font-size: 0.8rem;
+        padding: 8px 10px;
     }
 }

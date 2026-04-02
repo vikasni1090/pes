@@ -1,68 +1,293 @@
+/* ============================================================
+   index.css — Global styles & design tokens
+   ============================================================ */
+
+/* ── Design tokens ──────────────────────────────────────────── */
 :root {
+  /* Typography */
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Color scheme */
+  color-scheme: light;
+  color: #213547;
+  background-color: #ffffff;
+
+  /* ── Brand / surface colours ── */
+  --bg-primary:    #ece9f7;
+  --bg-secondary:  #c3cfe2;
+  --bg-surface:    #ffffff;
+  --text-primary:  #3f3d56;
+  --text-secondary: #4a4e69;
+  --border-color:  #e3e6f0;
+  --sidebar-bg:    #4b3c70;
+  --sidebar-text:  #ffffff;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 3px rgba(60, 60, 120, 0.08),
+               0 1px 2px rgba(60, 60, 120, 0.05);
+  --shadow-md: 0 4px 16px rgba(60, 60, 120, 0.12),
+               0 2px 6px  rgba(60, 60, 120, 0.07);
+  --shadow-lg: 0 8px 32px rgba(60, 60, 120, 0.16),
+               0 4px 12px rgba(60, 60, 120, 0.10);
+
+  /* ── Border radii ── */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 16px;
+
+  /* ── Transitions ── */
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.3s ease;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* ── Dark mode ──────────────────────────────────────────────── */
+body.dark {
+  color-scheme: dark;
+  color: #e0e0e0;
+  background-color: #1a1a2e;
+
+  --bg-primary:    #1a1a2e;
+  --bg-secondary:  #16213e;
+  --bg-surface:    #0f3460;
+  --text-primary:  #e0e0e0;
+  --text-secondary: #a0a0c0;
+  --border-color:  #2a2a4a;
+  --sidebar-bg:    #2d2b55;
+  --sidebar-text:  #e0e0e0;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
 
+/* ── Smooth scrolling ───────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── Custom scrollbar (webkit) ──────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #b0a8d0;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4b3c70;
+}
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #b0a8d0 transparent;
+}
+
+/* ── Box-sizing reset ───────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ── Body ───────────────────────────────────────────────────── */
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg-primary, #ece9f7);
+  color: var(--text-primary, #3f3d56);
 }
 
+/* ── Headings ───────────────────────────────────────────────── */
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: 2.8rem;
+  line-height: 1.15;
+  margin: 0 0 0.5rem;
 }
 
+h2 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+h3 {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  margin: 0 0 0.5rem;
+}
+
+/* ── Links ──────────────────────────────────────────────────── */
+a {
+  font-weight: 500;
+  color: #667eea;
+  text-decoration: inherit;
+  transition: color var(--transition-fast);
+}
+a:hover {
+  color: #4f46e5;
+}
+
+/* ── Global focus-visible for accessibility ─────────────────── */
+:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
 button {
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  padding: 0.55em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--sidebar-bg, #4b3c70);
+  color: #fff;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: background var(--transition-fast),
+              border-color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #667eea;
+  box-shadow: var(--shadow-sm);
 }
-button:focus,
+button:active {
+  transform: scale(0.97);
+}
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* ── Announcement Banner ────────────────────────────────────── */
+@keyframes banner-slide-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.announcement-banner {
+  width: 100%;
+  background: var(--sidebar-bg, #4b3c70);
+  color: var(--sidebar-text, #fff);
+  /* Left accent border for visual polish */
+  border-left: 4px solid rgba(255, 255, 255, 0.4);
+  padding: 0.6rem 1.25rem 0.6rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  animation: banner-slide-in 0.35s ease both;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.announcement-banner span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.announcement-banner button {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--sidebar-text, #fff);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.18rem 0.5rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+  box-shadow: none;
+  transform: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.announcement-banner button:hover {
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+  transform: none;
+}
+
+/* =========================================================
+   Global modal / overlay utility classes
+   Reusable building blocks for any modal or overlay.
+   ========================================================= */
+
+/* Dark blurred backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 20px;
+  animation: modal-fade-in 0.22s ease-out both;
+}
+
+/* Centered card with entrance animation */
+.modal-card {
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-primary, #3f3d56);
+  border-radius: var(--border-radius-lg, 16px);
+  box-shadow:
+    0 20px 48px -8px rgba(0, 0, 0, 0.22),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color, #e3e6f0);
+  width: 100%;
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+  animation: modal-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color, #e3e6f0) transparent;
+}
+
+.modal-card::-webkit-scrollbar { width: 5px; }
+.modal-card::-webkit-scrollbar-thumb {
+  background: var(--border-color, #e3e6f0);
+  border-radius: 99px;
+}
+
+/* Wider variant for data-heavy overlays */
+.modal-card.modal-card--wide {
+  max-width: 720px;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-enter {
+  from { opacity: 0; transform: scale(0.90) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
 }

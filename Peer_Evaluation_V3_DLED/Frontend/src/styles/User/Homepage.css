@@ -1,11 +1,14 @@
+/* ============================================================
+   Homepage.css — Modern landing page styles
+   All class names match exactly what Homepage.jsx uses.
+   ============================================================ */
+
+/* ── Page root: full-viewport centered gradient background ──── */
 .homepage-root {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   min-height: 100vh;
   min-width: 100vw;
-  height: 100vh;
-  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,107 +21,175 @@
   scrollbar-color: #4b3c70 transparent;
 }
 
+/* ── Card: glassmorphism container ─────────────────────────── */
 .homepage-card {
-  background: #fff;
-  padding: 2.5rem 2rem;
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(60,60,120,0.12);
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+
+  padding: 3rem 2.5rem;
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(60, 60, 120, 0.13),
+    0 2px 8px  rgba(102, 126, 234, 0.08);
   min-width: 320px;
-  max-width: 440px;
+  max-width: 460px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  border: none;
-  transition: box-shadow 0.2s;
   text-align: center;
   position: relative;
   overflow: hidden;
+
+  /* Entry animation */
+  animation: card-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-card {
+    animation: none;
+  }
+}
+
+/* ── Decorative gradient circle ─────────────────────────────── */
 .homepage-gradient-circle {
   position: absolute;
-  top: -60px;
-  right: -60px;
-  width: 140px;
-  height: 140px;
-  background: radial-gradient(circle at 30% 30%, #667eea33 60%, transparent 100%);
+  top: -70px;
+  right: -70px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(102, 126, 234, 0.22) 55%,
+    transparent 100%
+  );
   border-radius: 50%;
   z-index: 0;
+  pointer-events: none;
 }
 
+/* ── Logo badge ─────────────────────────────────────────────── */
 .homepage-logo {
-  width: 70px;
-  height: 70px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 2px 12px rgba(102,126,234,0.18);
+  margin-bottom: 0.25rem;
+  box-shadow:
+    0 4px 18px rgba(102, 126, 234, 0.35),
+    0 1px 4px  rgba(102, 126, 234, 0.15);
   z-index: 1;
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.25s ease;
 }
 
+.homepage-logo:hover {
+  transform: scale(1.07) rotate(-4deg);
+  box-shadow:
+    0 8px 28px rgba(102, 126, 234, 0.45),
+    0 2px 8px  rgba(102, 126, 234, 0.2);
+}
+
+/* ── Heading ────────────────────────────────────────────────── */
 .homepage-title {
-  font-weight: 700;
-  color: #3f3d56;
+  font-weight: 800;
   font-size: 2rem;
-  margin-bottom: 8px;
-  letter-spacing: 1px;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  margin: 0;
   z-index: 1;
+
+  /* Gradient text */
+  background: linear-gradient(135deg, #3f3d56 0%, #667eea 60%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
+/* ── Subtitle ───────────────────────────────────────────────── */
 .homepage-subtitle {
-  color: #7a7a9d;
-  font-size: 1.1rem;
-  margin-bottom: 16px;
+  color: #6b6b8d;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  margin: 0;
   z-index: 1;
 }
 
+/* ── Feature cards grid ─────────────────────────────────────── */
 .homepage-features {
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-  justify-content: center;
-  margin: 12px 0 8px 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
   width: 100%;
+  margin: 4px 0;
   z-index: 1;
 }
 
+/* ── Individual feature card ────────────────────────────────── */
 .homepage-feature {
-  background: #f6f8fc;
-  border-radius: 12px;
-  padding: 12px 10px;
-  min-width: 0;
-  flex: 1;
+  background: rgba(246, 248, 252, 0.85);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  border-radius: 14px;
+  padding: 14px 10px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 1px 4px rgba(102,126,234,0.07);
-  margin: 0 2px;
+  gap: 6px;
+  box-shadow: 0 1px 6px rgba(102, 126, 234, 0.07);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s ease,
+              border-color 0.22s ease;
+  cursor: default;
+}
+
+.homepage-feature:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 24px rgba(102, 126, 234, 0.15),
+    0 2px 6px  rgba(102, 126, 234, 0.08);
+  border-color: rgba(102, 126, 234, 0.28);
 }
 
 .homepage-feature-title {
-  font-weight: 600;
-  font-size: 0.97rem;
+  font-weight: 700;
+  font-size: 0.92rem;
   color: #3f3d56;
-  margin-bottom: 2px;
+  line-height: 1.3;
 }
 
 .homepage-feature-desc {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #7a7a9d;
+  line-height: 1.45;
   word-break: break-word;
 }
 
+/* ── CTA buttons row ────────────────────────────────────────── */
 .homepage-buttons-row {
   display: flex;
   flex-direction: row;
   gap: 48px;
   justify-content: center;
-  margin-top: 32px;
+  margin-top: 12px;
   z-index: 1;
 }
 
@@ -126,81 +197,167 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 10px;
 }
 
 .homepage-btn-label {
-  margin-top: 8px;
-  font-size: 1rem;
-  color: #3f3d56;
-  font-weight: 500;
+  font-size: 0.97rem;
+  color: var(--text-primary, #3f3d56);
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
+/* ── Icon buttons ───────────────────────────────────────────── */
 .homepage-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 50%;
-  padding: 24px;
+  padding: 22px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-  margin: 0 auto;
-  box-shadow: 0 2px 8px rgba(102,126,234,0.12);
+  transition: background 0.2s ease,
+              transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.2s ease;
+  box-shadow:
+    0 4px 14px rgba(102, 126, 234, 0.3),
+    0 1px 4px  rgba(102, 126, 234, 0.12);
   color: #fff;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Shine sweep on hover */
+.homepage-icon-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+  border-radius: inherit;
+}
+
+.homepage-icon-btn:hover::after {
+  transform: translateX(100%);
+}
+
+.homepage-icon-btn:hover {
+  transform: scale(1.09) translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(102, 126, 234, 0.4),
+    0 2px 8px  rgba(102, 126, 234, 0.18);
+}
+
+.homepage-icon-btn:active {
+  transform: scale(0.97);
+}
+
+/* Register variant — teal/cyan gradient */
 .homepage-icon-btn.register {
-  background: linear-gradient(90deg, #14b8a6 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+  box-shadow:
+    0 4px 14px rgba(20, 184, 166, 0.3),
+    0 1px 4px  rgba(20, 184, 166, 0.12);
 }
 
+.homepage-icon-btn.register:hover {
+  box-shadow:
+    0 8px 24px rgba(20, 184, 166, 0.4),
+    0 2px 8px  rgba(20, 184, 166, 0.18);
+}
+
+/* ── Responsive: small mobile ───────────────────────────────── */
 @media (max-width: 600px) {
   .homepage-root {
     padding: 0;
-    box-sizing: border-box;
-    overflow: auto;
+    align-items: flex-start;
   }
+
   .homepage-card {
-    min-width: 100vw !important;
-    max-width: 100vw !important;
-    padding: 1.2rem 0.3rem !important;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(60,60,120,0.10);
+    min-width: 100vw;
+    max-width: 100vw;
+    border-radius: 0 0 20px 20px;
+    padding: 1.5rem 1rem 2rem;
+    box-shadow: 0 4px 16px rgba(60, 60, 120, 0.1);
+    gap: 1.2rem;
   }
+
   .homepage-title {
-    font-size: 1.3rem !important;
+    font-size: 1.45rem;
   }
-  .homepage-buttons-row {
-    flex-direction: column !important;
-    gap: 1.5rem !important;
-    margin-top: 20px;
+
+  .homepage-subtitle {
+    font-size: 0.97rem;
   }
-  .homepage-features {
-    flex-direction: column !important;
-    gap: 0.7rem !important;
-    margin: 10px 0 4px 0;
-  }
-  .homepage-feature {
-    width: 95vw;
-    max-width: 98vw;
-    margin: 0 auto;
-  }
+
   .homepage-logo {
-    width: 54px;
-    height: 54px;
+    width: 58px;
+    height: 58px;
   }
+
   .homepage-gradient-circle {
-    width: 80px;
-    height: 80px;
-    top: -30px;
-    right: -30px;
+    width: 100px;
+    height: 100px;
+    top: -35px;
+    right: -35px;
+  }
+
+  /* Stack feature cards vertically on mobile */
+  .homepage-features {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .homepage-feature {
+    flex-direction: row;
+    text-align: left;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .homepage-feature-title,
+  .homepage-feature-desc {
+    text-align: left;
+  }
+
+  .homepage-buttons-row {
+    gap: 2rem;
+    margin-top: 8px;
+  }
+
+  .homepage-icon-btn {
+    padding: 18px;
   }
 }
 
+/* ── Responsive: medium tablet ──────────────────────────────── */
+@media (min-width: 601px) and (max-width: 899px) {
+  .homepage-card {
+    max-width: 440px;
+    padding: 2.5rem 2rem;
+  }
+
+  .homepage-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* ── Responsive: large desktop ──────────────────────────────── */
 @media (min-width: 900px) {
   .homepage-card {
-    min-width: 400px !important;
-    max-width: 480px !important;
-    padding: 3rem 2.5rem !important;
+    min-width: 420px;
+    max-width: 500px;
+    padding: 3.5rem 3rem;
+  }
+
+  .homepage-title {
+    font-size: 2.2rem;
   }
 }

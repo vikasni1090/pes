@@ -9,7 +9,7 @@ export const containerStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'linear-gradient(135deg, #ece9f7 0%, #c3cfe2 100%)',
+  background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
   padding: '2rem',
   boxSizing: 'border-box',
   zIndex: 0
@@ -17,16 +17,15 @@ export const containerStyle = {
 
 export const sidebarStyle = {
   width: '250px',
-  // background: '#3f3d56',
-  background: 'linear-gradient(90deg, #3f3d56 0%, #5c5470 100%)',
+  background: 'linear-gradient(180deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%)',
   color: 'white',
   padding: '2rem 1rem',
   borderTopRightRadius: '20px',
   borderBottomRightRadius: '20px',
-  boxShadow: '4px 0 12px rgba(0,0,0,0.1)',
+  boxShadow: '4px 0 20px rgba(30,58,138,0.22)',
   display: 'flex',
   flexDirection: 'column',
-  gap: '1.25rem',
+  gap: '0.4rem',
   minWidth: 0,
   boxSizing: 'border-box',
   height: '100vh',
@@ -50,9 +49,10 @@ export const mainStyle = {
 };
 
 export const contentStyle = {
-  background: '#ffffff',
+  background: 'rgba(255,255,255,0.97)',
   borderRadius: '20px',
-  boxShadow: '0 8px 32px rgba(60,60,120,0.12)',
+  boxShadow: '0 8px 32px rgba(30,58,138,0.12)',
+  border: '1.5px solid rgba(147,197,253,0.4)',
   padding: '2rem',
   width: '100%',
   height: '80vh',
@@ -71,25 +71,33 @@ export const sidebarToggleBtnStyle = {
 
 export function buttonStyle(active) {
   return {
-    background: active ? '#4a4e69' : 'transparent',
+    background: active
+      ? 'linear-gradient(90deg, rgba(59,130,246,0.25), rgba(37,99,235,0.18))'
+      : 'transparent',
     color: 'white',
-    padding: '0.75rem 1rem',
+    padding: '0.7rem 1rem',
     textAlign: 'left',
     border: 'none',
+    borderLeft: active ? '3px solid rgba(255,255,255,0.9)' : '3px solid transparent',
     cursor: 'pointer',
-    fontWeight: 500,
-    borderRadius: '8px',
-    transition: 'background 0.2s ease',
-    fontSize: '1rem',
+    fontWeight: active ? 700 : 500,
+    borderRadius: '10px',
+    transition: 'background 0.2s ease, border-left 0.2s ease',
+    fontSize: '0.97rem',
     textTransform: 'capitalize',
     width: '100%',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    letterSpacing: '0.01em',
   };
 }
 
 export const sectionHeading = {
   fontSize: '1.8rem',
-  fontWeight: 'bold',
-  color: '#3f3d56',
-  marginBottom: '1.25rem'
+  fontWeight: 800,
+  background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+  marginBottom: '1.25rem',
+  letterSpacing: '-0.01em',
 };

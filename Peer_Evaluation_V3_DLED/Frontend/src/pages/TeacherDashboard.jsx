@@ -7,6 +7,7 @@ import { showMessage } from '../utils/Message';
 import { AppContext } from '../utils/AppContext';
 import { useContext } from 'react';
 import ProfileMenu from '../components/User/ProfileMenu.jsx';
+import AnnouncementBanner from '../components/AnnouncementBanner';
 import ScheduleExamOverlay from '../components/Teacher/ScheduleExamOverlay.jsx';
 import EnrollStudentsOverlay from '../components/Teacher/EnrollStudentsOverlay.jsx';
 import EditExamOverlay from '../components/Teacher/EditExamOverlay.jsx';
@@ -45,7 +46,38 @@ export default function TeacherDashboard() {
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
   const [resultsOverlayOpen, setResultsOverlayOpen] = useState(false);
   const [selectedExamForResults, setSelectedExamForResults] = useState(null);
-  const { setRefreshApp } = useContext(AppContext);
+  const { setRefreshApp, darkMode, toggleDarkMode, announcement, announcementDismissed, dismissAnnouncement } = useContext(AppContext);
+  const [allAnnouncements, setAllAnnouncements] = useState([]);
+  const [newAnnouncementMsg, setNewAnnouncementMsg] = useState('');
+
+  // Course Manager state
+  const [instructors, setInstructors] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [courseDetails, setCourseDetails] = useState({ courseId: '', courseName: '', openCourse: false, startDate: '', endDate: '' });
+  const [editCourseId, setEditCourseId] = useState('');
+  const [editCourseDetails, setEditCourseDetails] = useState({ courseId: '', courseName: '', openCourse: false, startDate: '', endDate: '' });
+  const [deleteCourseId, setDeleteCourseId] = useState('');
+
+  // Batch Manager state
+  const [allBatches, setAllBatches] = useState([]);
+  const [batchDetails, setBatchDetails] = useState({ batchId: '', instructor: '', course: '' });
+  const [editBatchId, setEditBatchId] = useState('');
+  const [editBatchDetails, setEditBatchDetails] = useState({ batchId: '', instructor: '', course: '' });
+  const [deleteBatchId, setDeleteBatchId] = useState('');
+
+  // Pending enrollments
+  const [pendingEnrollmentRequests, setPendingEnrollmentRequests] = useState([]);
+
+  const fetchAllAnnouncements = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/announcements', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) setAllAnnouncements(data);
+    } catch (err) { console.error(err); }
+  };
 
   useEffect(() => {
     document.body.style.background = '';
@@ -130,6 +162,172 @@ export default function TeacherDashboard() {
 
     fetchCoursesAndBatches();
   }, []);
+
+  // Course/Batch Manager fetch functions
+  const fetchInstructors = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/admin/teachers', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setInstructors(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/admin/courses', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setCourses(data.map(c => ({ id: c._id || c.id, courseId: c.courseId, name: c.courseName || c.name })));
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchAllBatches = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/admin/batches', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setAllBatches(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchPendingEnrollmentRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/teacher/pending-enrollments', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (Array.isArray(data)) setPendingEnrollmentRequests(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleEnrollmentAction = async (enrollmentId, action) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/teacher/enrollment/${enrollmentId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); fetchPendingEnrollmentRequests(); }
+      else showMessage(data.message || 'Failed', 'error');
+    } catch { showMessage('Failed to update enrollment', 'error'); }
+  };
+
+  const handleCourseSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/admin/add-course', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(courseDetails),
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); setCourseDetails({ courseId: '', courseName: '', openCourse: false, startDate: '', endDate: '' }); fetchCourses(); }
+      else showMessage(data.message || 'Failed to add course', 'error');
+    } catch { showMessage('Error adding course', 'error'); }
+  };
+
+  const handleEditCourseSelect = async (id) => {
+    setEditCourseId(id);
+    if (!id) { setEditCourseDetails({ courseId: '', courseName: '', openCourse: false, startDate: '', endDate: '' }); return; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/course/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const c = await res.json();
+        setEditCourseDetails({ courseId: c.courseId, courseName: c.courseName, openCourse: c.openCourse, startDate: c.startDate ? c.startDate.split('T')[0] : '', endDate: c.endDate ? c.endDate.split('T')[0] : '' });
+      }
+    } catch { showMessage('Error fetching course', 'error'); }
+  };
+
+  const handleCourseUpdate = async (e) => {
+    e.preventDefault();
+    if (!editCourseId) { showMessage('Select a course to edit', 'error'); return; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/update-course/${editCourseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editCourseDetails),
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); setEditCourseId(''); handleEditCourseSelect(''); fetchCourses(); }
+      else showMessage(data.message || 'Failed to update course', 'error');
+    } catch { showMessage('Error updating course', 'error'); }
+  };
+
+  const handleCourseDelete = async (e) => {
+    e.preventDefault();
+    if (!deleteCourseId) { showMessage('Select a course to delete', 'error'); return; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/delete-course/${deleteCourseId}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); setDeleteCourseId(''); fetchCourses(); fetchAllBatches(); }
+      else showMessage(data.message || 'Failed to delete course', 'error');
+    } catch { showMessage('Error deleting course', 'error'); }
+  };
+
+  const handleBatchSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/admin/add-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(batchDetails),
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); setBatchDetails({ batchId: '', instructor: '', course: '' }); fetchAllBatches(); }
+      else showMessage(data.message || 'Failed to add batch', 'error');
+    } catch { showMessage('Error adding batch', 'error'); }
+  };
+
+  const handleEditBatchSelect = async (id) => {
+    setEditBatchId(id);
+    if (!id) { setEditBatchDetails({ batchId: '', instructor: '', course: '' }); return; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/batch/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const b = await res.json();
+        setEditBatchDetails({ batchId: b.batchId, instructor: b.instructor._id, course: b.course._id });
+      }
+    } catch { showMessage('Error fetching batch', 'error'); }
+  };
+
+  const handleBatchUpdate = async (e) => {
+    e.preventDefault();
+    if (!editBatchId) { showMessage('Select a batch to edit', 'error'); return; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/update-batch/${editBatchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(editBatchDetails),
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); setEditBatchId(''); handleEditBatchSelect(''); fetchAllBatches(); }
+      else showMessage(data.message || 'Failed to update batch', 'error');
+    } catch { showMessage('Error updating batch', 'error'); }
+  };
+
+  const handleBatchDelete = async () => {
+    if (!deleteBatchId) { showMessage('Select a batch to delete', 'error'); return; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/admin/delete-batch/${deleteBatchId}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) { showMessage(data.message, 'success'); setDeleteBatchId(''); fetchAllBatches(); }
+      else showMessage(data.message || 'Failed to delete batch', 'error');
+    } catch { showMessage('Error deleting batch', 'error'); }
+  };
 
   useEffect(() => {
     if (selectedCourseId) {
@@ -732,7 +930,7 @@ export default function TeacherDashboard() {
       style={{
         minHeight: '100vh',
         width: '100vw',
-        background: 'linear-gradient(135deg, #ece9f7 0%, #c3cfe2 100%)',
+        background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
         display: 'flex',
         flexDirection: 'row',
         position: 'fixed',
@@ -745,7 +943,7 @@ export default function TeacherDashboard() {
         overflowX: 'auto',
         overflowY: 'auto',
         scrollbarWidth: 'thin',
-        scrollbarColor: ' #4b3c70 transparent',
+        scrollbarColor: ' #1d4ed8 transparent',
       }}
     >
       {/* Profile Icon Dropdown Top Right */}
@@ -757,7 +955,14 @@ export default function TeacherDashboard() {
         display: 'flex',
         alignItems: 'center',
       }}>
-        <ProfileMenu user={user} onLogout={logout} onProfile={() => setActiveTab('profile')} />
+        <ProfileMenu
+          user={user}
+          onLogout={logout}
+          onProfile={() => setActiveTab('profile')}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          onAvatarUpdate={(url) => setUser(prev => ({ ...prev, profilePicture: url }))}
+        />
       </div>
 
       {/* Sidebar Toggle Button */}
@@ -804,8 +1009,11 @@ export default function TeacherDashboard() {
           <>
             <button onClick={() => setActiveTab('home')} style={buttonStyle(activeTab === 'home')}>🏠 Home</button>
             <button onClick={() => setActiveTab('role')} style={buttonStyle(activeTab === 'role')}>🧑‍💼 TA Manager</button>
-            <button onClick={() => setActiveTab('course')} style={buttonStyle(activeTab === 'course')}>📚 Courses</button>
+            <button onClick={() => { setActiveTab('course'); fetchCourses(); fetchAllBatches(); fetchPendingEnrollmentRequests(); }} style={buttonStyle(activeTab === 'course')}>📚 Courses</button>
+            <button onClick={() => { setActiveTab('courseManager'); fetchCourses(); }} style={buttonStyle(activeTab === 'courseManager')}>🗂️ Course Manager</button>
+            <button onClick={() => { setActiveTab('batchManager'); fetchCourses(); fetchAllBatches(); fetchInstructors(); }} style={buttonStyle(activeTab === 'batchManager')}>📘 Batch Manager</button>
             <button onClick={() => setActiveTab('exam')} style={buttonStyle(activeTab === 'exam')}>📝 Exams</button>
+            <button onClick={() => { setActiveTab('announcements'); fetchAllAnnouncements(); }} style={buttonStyle(activeTab === 'announcements')}>📢 Announcements</button>
             <button onClick={logout} style={{ marginTop: 'auto', ...buttonStyle(false) }}>🚪 Logout</button>
           </>
         )}
@@ -821,6 +1029,9 @@ export default function TeacherDashboard() {
           justifyContent: 'center',
         }}
       >
+        {announcement && !announcementDismissed && (
+          <AnnouncementBanner message={announcement.message} onDismiss={dismissAnnouncement} />
+        )}
         <div className="teacher-dashboard-content" style={{
           ...contentStyle,
           background: 'rgba(255,255,255,0.92)',
@@ -836,7 +1047,7 @@ export default function TeacherDashboard() {
           minWidth: '1060px',
         }}>
           {activeTab === 'home' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', color: '#3f3d56' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', color: '#1e3a8a' }}>
               <h2 style={{ ...sectionHeading, textAlign: 'center', marginBottom: '3rem' }}>
                 Welcome to the Teacher Dashboard
               </h2>
@@ -857,7 +1068,7 @@ export default function TeacherDashboard() {
                     textAlign: 'center', 
                     padding: '1.8rem 1.2rem',
                     borderRadius: '16px',
-                    background: 'linear-gradient(135deg, #667eea, #764ba2)', 
+                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
                     boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)', 
                     width: 'calc(25% - 0.75rem)',
                     minWidth: '180px',
@@ -940,17 +1151,17 @@ export default function TeacherDashboard() {
 
           {activeTab === 'profile' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#2d3559', height: '100%' }}>
-              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'left', color: '#3f3d56' }}>Profile</h2>
-              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0', color: '#3f3d56' }}><strong>Name:</strong> {user.name}</p>
-              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0', color: '#3f3d56' }}><strong>Email:</strong> {user.email}</p>
-              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0', color: '#3f3d56' }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'left', color: '#1e3a8a' }}>Profile</h2>
+              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0', color: '#1e3a8a' }}><strong>Name:</strong> {user.name}</p>
+              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0', color: '#1e3a8a' }}><strong>Email:</strong> {user.email}</p>
+              <p style={{ fontSize: '1.2rem', margin: '0.5rem 0', color: '#1e3a8a' }}>
                 <strong>Role:</strong> {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
               </p>
               <div style={{ marginTop: 'auto' }}>
                 <button
                   onClick={() => navigate('/change-password')}
                   style={{
-                    background: ' #5c5470',
+                    background: ' #2563eb',
                     border: 'none',
                     color: '#fff',
                     fontWeight: 600,
@@ -970,12 +1181,12 @@ export default function TeacherDashboard() {
 
           {activeTab === 'role' && (
             <div style={{ display: 'flex', flexDirection: 'column', color: '#2d3559' }}>
-              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'center', color: '#3f3d56' }}>TA Manager</h2>
-              <p style={{ textAlign: 'left', color: '#3f3d56' }}>Assign or deassign a TA to/from a batch by selecting the batch and action.</p>
-              <form onSubmit={handleTAAssignment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '50%', maxWidth: '900px', border: '2px solid #5c5470', borderRadius: '12px', padding: '1rem', boxShadow: "0 4px 12px #4b3c70" }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'center', color: '#1e3a8a' }}>TA Manager</h2>
+              <p style={{ textAlign: 'left', color: '#1e3a8a' }}>Assign or deassign a TA to/from a batch by selecting the batch and action.</p>
+              <form onSubmit={handleTAAssignment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '50%', maxWidth: '900px', border: '2px solid #2563eb', borderRadius: '12px', padding: '1rem', boxShadow: "0 4px 12px #1d4ed8" }}>
                 {/* Email Input */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
-                  <label style={{ color: '#3f3d56', fontWeight: 'bold', whiteSpace: 'nowrap', width: '150px', textAlign: 'left' }} htmlFor="email">Email ID</label>
+                  <label style={{ color: '#1e3a8a', fontWeight: 'bold', whiteSpace: 'nowrap', width: '150px', textAlign: 'left' }} htmlFor="email">Email ID</label>
                   <input
                     type="email"
                     id="email"
@@ -984,31 +1195,31 @@ export default function TeacherDashboard() {
                     style={{
                       padding: '0.5rem',
                       borderRadius: '12px',
-                      border: '1px solid #5c5470',
+                      border: '1px solid #2563eb',
                       fontSize: '1rem',
                       width: '300px',
                       boxSizing: 'border-box',
                       background: '#ffffff',
-                      color: ' #4b3c70',
+                      color: ' #1d4ed8',
                     }}
                   />
                 </div>
 
                 {/* Batch Dropdown */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
-                  <label style={{ color: '#3f3d56', fontWeight: 'bold', whiteSpace: 'nowrap', width: '150px', textAlign: 'left' }} htmlFor="batch">Select Batch</label>
+                  <label style={{ color: '#1e3a8a', fontWeight: 'bold', whiteSpace: 'nowrap', width: '150px', textAlign: 'left' }} htmlFor="batch">Select Batch</label>
                   <select
                     id="batch"
                     name="batch"
                     style={{
                       padding: '0.5rem',
                       borderRadius: '12px',
-                      border: '1px solid #5c5470',
+                      border: '1px solid #2563eb',
                       fontSize: '1rem',
                       width: '300px',
                       boxSizing: 'border-box',
                       background: '#ffffff',
-                      color: ' #4b3c70',
+                      color: ' #1d4ed8',
                     }}
                   >
                     <option value="">Select Batch</option>
@@ -1024,19 +1235,19 @@ export default function TeacherDashboard() {
 
                 {/* Action Dropdown */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
-                  <label style={{ color: '#3f3d56', fontWeight: 'bold', whiteSpace: 'nowrap', width: '150px', textAlign: 'left' }} htmlFor="action">Select Action</label>
+                  <label style={{ color: '#1e3a8a', fontWeight: 'bold', whiteSpace: 'nowrap', width: '150px', textAlign: 'left' }} htmlFor="action">Select Action</label>
                   <select
                     id="action"
                     name="action"
                     style={{
                       padding: '0.5rem',
                       borderRadius: '12px',
-                      border: '1px solid #5c5470',
+                      border: '1px solid #2563eb',
                       fontSize: '1rem',
                       width: '300px',
                       boxSizing: 'border-box',
                       background: '#ffffff',
-                      color: ' #4b3c70',
+                      color: ' #1d4ed8',
                     }}
                   >
                     <option value="assign">Assign</option>
@@ -1049,7 +1260,7 @@ export default function TeacherDashboard() {
                   <button
                     type="submit"
                     style={{
-                      background: '#5c5470',
+                      background: '#2563eb',
                       border: 'none',
                       color: '#fff',
                       fontWeight: 600,
@@ -1069,13 +1280,59 @@ export default function TeacherDashboard() {
           )}
 
           {activeTab === 'course' && (
-            <div style={{ display: 'flex', flexDirection: 'column', color: '#2d3559', width: '100%' }}>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '2rem', color: '#3f3d56' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', color: '#2d3559', width: '100%', gap: '2rem' }}>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0', color: '#1e3a8a' }}>
                 Courses and Batches
               </h2>
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', overflow: 'hidden', border: '2px solid #5c5470', borderRadius: '12px', boxShadow: "0 4px 12px #4b3c70" }}>
-                <thead style={{ backgroundColor: '#4b3c70', color: '#ffffff' }}>
+              {/* Pending Enrollment Requests */}
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1d4ed8', marginBottom: '0.75rem' }}>
+                  Pending Enrollment Requests {pendingEnrollmentRequests.length > 0 && (
+                    <span style={{ background: '#c0392b', color: '#fff', borderRadius: '12px', padding: '0.15rem 0.6rem', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{pendingEnrollmentRequests.length}</span>
+                  )}
+                </h3>
+                {pendingEnrollmentRequests.length === 0 ? (
+                  <p style={{ color: '#888', fontStyle: 'italic' }}>No pending requests.</p>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', border: '2px solid #2563eb', borderRadius: '12px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                    <thead style={{ backgroundColor: '#1d4ed8', color: '#fff' }}>
+                      <tr>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Student</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Email</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Course</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Batch</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'center' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingEnrollmentRequests.map(e => (
+                        <tr key={e._id} style={{ borderBottom: '1px solid #ddd' }}>
+                          <td style={{ padding: '10px 14px', color: '#1e3a8a' }}>{e.student?.name}</td>
+                          <td style={{ padding: '10px 14px', color: '#1e3a8a' }}>{e.student?.email}</td>
+                          <td style={{ padding: '10px 14px', color: '#1e3a8a' }}>{e.batch?.course?.courseName}</td>
+                          <td style={{ padding: '10px 14px', color: '#1e3a8a' }}>{e.batch?.batchId}</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                              <button onClick={() => handleEnrollmentAction(e._id, 'approve')}
+                                style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.35rem 0.9rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+                                Approve
+                              </button>
+                              <button onClick={() => handleEnrollmentAction(e._id, 'reject')}
+                                style={{ background: '#c0392b', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.35rem 0.9rem', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', overflow: 'hidden', border: '2px solid #2563eb', borderRadius: '12px', boxShadow: "0 4px 12px #1d4ed8" }}>
+                <thead style={{ backgroundColor: '#1d4ed8', color: '#ffffff' }}>
                   <tr>
                     <th style={{ padding: '12px', textAlign: 'center' }}>Course Name</th>
                     <th style={{ padding: '12px', textAlign: 'center' }}>Batch Name</th>
@@ -1086,8 +1343,8 @@ export default function TeacherDashboard() {
                   {coursesAndBatches.map((course) =>
                     course.batches.map((batch) => (
                       <tr key={batch.id} style={{ borderBottom: '1px solid #ddd' }}>
-                        <td style={{ padding: '12px', color: '#3f3d56' }}>{course.name}</td>
-                        <td style={{ padding: '12px', color: '#3f3d56' }}>{batch.name}</td>
+                        <td style={{ padding: '12px', color: '#1e3a8a' }}>{course.name}</td>
+                        <td style={{ padding: '12px', color: '#1e3a8a' }}>{batch.name}</td>
                         <td style={{ padding: '12px' }}>
                           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                             <button
@@ -1099,7 +1356,7 @@ export default function TeacherDashboard() {
                               style={{
                                 padding: '0.5rem 1rem',
                                 borderRadius: '8px',
-                                backgroundColor: '#4b3c70',
+                                backgroundColor: '#1d4ed8',
                                 color: '#ffffff',
                                 border: 'none',
                                 fontSize: '0.95rem',
@@ -1114,7 +1371,7 @@ export default function TeacherDashboard() {
                               style={{
                                 padding: '0.5rem 1rem',
                                 borderRadius: '8px',
-                                backgroundColor: '#4b3c70',
+                                backgroundColor: '#1d4ed8',
                                 color: '#ffffff',
                                 border: 'none',
                                 fontSize: '0.95rem',
@@ -1128,7 +1385,7 @@ export default function TeacherDashboard() {
                               style={{
                                 padding: '0.5rem 1rem',
                                 borderRadius: '8px',
-                                backgroundColor: '#4b3c70',
+                                backgroundColor: '#1d4ed8',
                                 color: '#ffffff',
                                 border: 'none',
                                 fontSize: '0.95rem',
@@ -1148,11 +1405,186 @@ export default function TeacherDashboard() {
               </table>
             </div>
           )}
-          
+
+          {activeTab === 'courseManager' && (
+            <div style={{ width: '100%', minWidth: '1000px' }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'center', color: '#1e3a8a' }}>Course Manager</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+
+                {/* Add Course */}
+                <div style={{ width: '40%', border: '2px solid #2563eb', borderRadius: '15px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', color: '#1e3a8a' }}>Add New Course</h3>
+                  <form onSubmit={handleCourseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0.5rem' }}>
+                    {[['courseId', 'Course ID', 'text'], ['courseName', 'Course Name', 'text'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date']].map(([field, label, type]) => (
+                      <div key={field} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '35%', whiteSpace: 'nowrap' }}>{label}</label>
+                        <input type={type} value={courseDetails[field] || ''} onChange={e => setCourseDetails({ ...courseDetails, [field]: e.target.value })}
+                          style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '60%', background: '#fff', color: '#1d4ed8', colorScheme: 'light' }} />
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '35%' }}>Open Course</label>
+                      <input type="checkbox" checked={courseDetails.openCourse || false} onChange={e => setCourseDetails({ ...courseDetails, openCourse: e.target.checked })}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                      <button type="submit" style={{ background: '#2563eb', border: 'none', color: '#fff', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Add Course</button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Edit Course */}
+                <div style={{ width: '35%', marginLeft: '2rem', marginRight: '2rem', border: '2px solid #2563eb', borderRadius: '15px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', color: '#1e3a8a' }}>Edit Course</h3>
+                  <div style={{ margin: '0.5rem 1rem 1rem' }}>
+                    <label style={{ color: '#1e3a8a', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>Select Course to Edit</label>
+                    <select value={editCourseId} onChange={e => handleEditCourseSelect(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '90%', background: '#fff', color: '#1d4ed8' }}>
+                      <option value="">Select Course</option>
+                      {courses.map(c => <option key={c.id} value={c.id}>{c.courseId} - {c.name}</option>)}
+                    </select>
+                  </div>
+                  {editCourseId && (
+                    <form onSubmit={handleCourseUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0.5rem' }}>
+                      {[['courseId', 'Course ID', 'text'], ['courseName', 'Course Name', 'text'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date']].map(([field, label, type]) => (
+                        <div key={field} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '35%', whiteSpace: 'nowrap' }}>{label}</label>
+                          <input type={type} value={editCourseDetails[field] || ''} onChange={e => setEditCourseDetails({ ...editCourseDetails, [field]: e.target.value })}
+                            style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '60%', background: '#fff', color: '#1d4ed8', colorScheme: 'light' }} />
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '35%' }}>Open Course</label>
+                        <input type="checkbox" checked={editCourseDetails.openCourse || false} onChange={e => setEditCourseDetails({ ...editCourseDetails, openCourse: e.target.checked })}
+                          style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                        <button type="submit" style={{ background: '#2563eb', border: 'none', color: '#fff', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Update Course</button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                {/* Delete Course */}
+                <div style={{ width: '25%', border: '2px solid #2563eb', borderRadius: '15px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', color: '#1e3a8a' }}>Delete Course</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', margin: '0.5rem' }}>
+                    <select value={deleteCourseId} onChange={e => setDeleteCourseId(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '90%', background: '#fff', color: '#1d4ed8' }}>
+                      <option value="">Select Course</option>
+                      {courses.map(c => <option key={c.id} value={c.id}>{c.courseId} - {c.name}</option>)}
+                    </select>
+                    <button onClick={handleCourseDelete}
+                      style={{ background: '#c0392b', border: 'none', color: '#fff', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', width: '60%' }}>
+                      Delete Course
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'batchManager' && (
+            <div style={{ width: '100%', minWidth: '1000px' }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '2rem', textAlign: 'center', color: '#1e3a8a' }}>Batch Manager</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+
+                {/* Add Batch */}
+                <div style={{ width: '35%', border: '2px solid #2563eb', borderRadius: '15px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', color: '#1e3a8a' }}>Add New Batch</h3>
+                  <form onSubmit={handleBatchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '90%' }}>
+                      <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '40%', whiteSpace: 'nowrap' }}>Batch ID</label>
+                      <input type="text" value={batchDetails.batchId} onChange={e => setBatchDetails({ ...batchDetails, batchId: e.target.value })}
+                        placeholder="Enter batch ID"
+                        style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '100%', background: '#fff', color: '#1d4ed8' }} />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '90%' }}>
+                      <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '40%', whiteSpace: 'nowrap' }}>Instructor</label>
+                      <select value={batchDetails.instructor} onChange={e => setBatchDetails({ ...batchDetails, instructor: e.target.value })}
+                        style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '100%', background: '#fff', color: '#1d4ed8' }}>
+                        <option value="">Select Instructor</option>
+                        {instructors.map(i => <option key={i._id} value={i._id}>{i.name} ({i.email})</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '90%' }}>
+                      <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '40%', whiteSpace: 'nowrap' }}>Course</label>
+                      <select value={batchDetails.course} onChange={e => setBatchDetails({ ...batchDetails, course: e.target.value })}
+                        style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '100%', background: '#fff', color: '#1d4ed8' }}>
+                        <option value="">Select Course</option>
+                        {courses.map(c => <option key={c.id} value={c.id}>{c.courseId} - {c.name}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                      <button type="submit" style={{ background: '#2563eb', border: 'none', color: '#fff', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Add Batch</button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Edit Batch */}
+                <div style={{ width: '35%', marginLeft: '2rem', marginRight: '2rem', border: '2px solid #2563eb', borderRadius: '15px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', color: '#1e3a8a' }}>Edit Batch</h3>
+                  <div style={{ margin: '0.5rem 1rem 1rem' }}>
+                    <label style={{ color: '#1e3a8a', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>Select Batch to Edit</label>
+                    <select value={editBatchId} onChange={e => handleEditBatchSelect(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '90%', background: '#fff', color: '#1d4ed8' }}>
+                      <option value="">Select Batch</option>
+                      {allBatches.map(b => <option key={b._id} value={b._id}>{b.batchId} - {b.course?.courseName} ({b.instructor?.name})</option>)}
+                    </select>
+                  </div>
+                  {editBatchId && (
+                    <form onSubmit={handleBatchUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', margin: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '30%', whiteSpace: 'nowrap' }}>Batch ID</label>
+                        <input type="text" value={editBatchDetails.batchId} onChange={e => setEditBatchDetails({ ...editBatchDetails, batchId: e.target.value })}
+                          style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '60%', background: '#fff', color: '#1d4ed8' }} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '30%', whiteSpace: 'nowrap' }}>Instructor</label>
+                        <select value={editBatchDetails.instructor} onChange={e => setEditBatchDetails({ ...editBatchDetails, instructor: e.target.value })}
+                          style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '60%', background: '#fff', color: '#1d4ed8' }}>
+                          <option value="">Select Instructor</option>
+                          {instructors.map(i => <option key={i._id} value={i._id}>{i.name} ({i.email})</option>)}
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <label style={{ color: '#1e3a8a', fontWeight: 'bold', width: '30%', whiteSpace: 'nowrap' }}>Course</label>
+                        <select value={editBatchDetails.course} onChange={e => setEditBatchDetails({ ...editBatchDetails, course: e.target.value })}
+                          style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '60%', background: '#fff', color: '#1d4ed8' }}>
+                          <option value="">Select Course</option>
+                          {courses.map(c => <option key={c.id} value={c.id}>{c.courseId} - {c.name}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                        <button type="submit" style={{ background: '#2563eb', border: 'none', color: '#fff', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Update Batch</button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                {/* Delete Batch */}
+                <div style={{ width: '25%', border: '2px solid #2563eb', borderRadius: '15px', boxShadow: '0 4px 12px #1d4ed8' }}>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', color: '#1e3a8a' }}>Delete Batch</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', margin: '0.5rem' }}>
+                    <select value={deleteBatchId} onChange={e => setDeleteBatchId(e.target.value)}
+                      style={{ padding: '0.5rem', borderRadius: '12px', border: '1px solid #2563eb', fontSize: '1rem', width: '90%', background: '#fff', color: '#1d4ed8' }}>
+                      <option value="">Select Batch</option>
+                      {allBatches.map(b => <option key={b._id} value={b._id}>{b.batchId} - {b.course?.courseName} ({b.instructor?.name})</option>)}
+                    </select>
+                    <button onClick={handleBatchDelete}
+                      style={{ background: '#c0392b', border: 'none', color: '#fff', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', width: '55%' }}>
+                      Delete Batch
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'exam' && (
             <div style={{ display: 'flex', flexDirection: 'column', color: '#2d3559', width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: '2rem' }}>
-                <h2 style={{ ...sectionHeading, marginBottom: '2rem', textAlign: 'center', color: '#3f3d56', flex: 1 }}>
+                <h2 style={{ ...sectionHeading, marginBottom: '2rem', textAlign: 'center', color: '#1e3a8a', flex: 1 }}>
                   Exam Management
                 </h2>
                 <button
@@ -1160,7 +1592,7 @@ export default function TeacherDashboard() {
                   style={{
                     position: 'absolute',
                     right: 0,
-                    background: '#4b3c70',
+                    background: '#1d4ed8',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '8px',
@@ -1176,10 +1608,10 @@ export default function TeacherDashboard() {
               </div>
 
               {/* Inline Row for Course, Batch Dropdowns, and Schedule Exam Button */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', width: '97%', border: '2px solid #5c5470', borderRadius: '12px', padding: '1rem', boxShadow: "0 4px 12px #4b3c70" }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', width: '97%', border: '2px solid #2563eb', borderRadius: '12px', padding: '1rem', boxShadow: "0 4px 12px #1d4ed8" }}>
                 {/* Course Dropdown */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto' }}>
-                  <label style={{ color: '#3f3d56', fontWeight: 'bold', whiteSpace: 'nowrap' }} htmlFor="courseDropdown">Course</label>
+                  <label style={{ color: '#1e3a8a', fontWeight: 'bold', whiteSpace: 'nowrap' }} htmlFor="courseDropdown">Course</label>
                   <select
                     id="courseDropdown"
                     value={selectedCourseId}
@@ -1187,11 +1619,11 @@ export default function TeacherDashboard() {
                     style={{
                       padding: '0.5rem',
                       borderRadius: '12px',
-                      border: '1px solid #5c5470',
+                      border: '1px solid #2563eb',
                       fontSize: '1rem',
                       width: '250px',
                       background: '#ffffff',
-                      color: '#4b3c70',
+                      color: '#1d4ed8',
                     }}
                   >
                     <option value="">Select Course</option>
@@ -1203,7 +1635,7 @@ export default function TeacherDashboard() {
 
                 {/* Batch Dropdown */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 auto' }}>
-                  <label style={{ color: '#3f3d56', fontWeight: 'bold', whiteSpace: 'nowrap' }} htmlFor="batchDropdown">Batch</label>
+                  <label style={{ color: '#1e3a8a', fontWeight: 'bold', whiteSpace: 'nowrap' }} htmlFor="batchDropdown">Batch</label>
                   <select
                     id="batchDropdown"
                     value={selectedBatchId}
@@ -1212,11 +1644,11 @@ export default function TeacherDashboard() {
                     style={{
                       padding: '0.5rem',
                       borderRadius: '12px',
-                      border: '1px solid #5c5470',
+                      border: '1px solid #2563eb',
                       fontSize: '1rem',
                       width: '250px',
                       background: filteredBatches.length > 0 ? '#ffffff' : '#f0f0f0',
-                      color: filteredBatches.length > 0 ? '#4b3c70' : '#a0a0a0',
+                      color: filteredBatches.length > 0 ? '#1d4ed8' : '#a0a0a0',
                     }}
                   >
                     <option value="">{filteredBatches.length > 0 ? 'Select Batch' : 'No Batches Available'}</option>
@@ -1233,7 +1665,7 @@ export default function TeacherDashboard() {
                   style={{
                     padding: '0.6rem 1.2rem',
                     borderRadius: '12px',
-                    backgroundColor: selectedCourseId && selectedBatchId ? '#4b3c70' : '#a0a0a0',
+                    backgroundColor: selectedCourseId && selectedBatchId ? '#1d4ed8' : '#a0a0a0',
                     color: '#ffffff',
                     border: 'none',
                     fontSize: '1rem',
@@ -1260,7 +1692,81 @@ export default function TeacherDashboard() {
               />
             </div>
           )}
-          
+
+          {activeTab === 'announcements' && (
+            <div style={{ display: 'flex', flexDirection: 'column', color: '#1e3a8a', gap: '1.5rem' }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '1rem' }}>Announcements</h2>
+
+              {/* Post new announcement */}
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <textarea
+                  value={newAnnouncementMsg}
+                  onChange={e => setNewAnnouncementMsg(e.target.value)}
+                  placeholder="Type an announcement..."
+                  rows={3}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: '1.5px solid #2563eb', fontSize: '1rem', resize: 'vertical', fontFamily: 'inherit' }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!newAnnouncementMsg.trim()) return;
+                    try {
+                      const token = localStorage.getItem('token');
+                      const res = await fetch('http://localhost:5000/api/announcements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ message: newAnnouncementMsg }),
+                      });
+                      if (res.ok) { setNewAnnouncementMsg(''); fetchAllAnnouncements(); showMessage('Announcement posted!', 'success'); }
+                      else showMessage('Failed to post announcement', 'error');
+                    } catch { showMessage('Failed to post announcement', 'error'); }
+                  }}
+                  style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 8, padding: '0.75rem 1.5rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Post
+                </button>
+              </div>
+
+              {/* Existing announcements */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', maxHeight: '55vh' }}>
+                {allAnnouncements.length === 0 && <p style={{ color: '#888' }}>No announcements yet.</p>}
+                {allAnnouncements.map(a => (
+                  <div key={a._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', border: '1.5px solid #e3e6f0', borderRadius: 8, background: a.active ? '#f5f3ff' : '#f9f9f9' }}>
+                    <span style={{ flex: 1, color: a.active ? '#1e3a8a' : '#aaa', textDecoration: a.active ? 'none' : 'line-through' }}>{a.message}</span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('token');
+                          await fetch(`http://localhost:5000/api/announcements/${a._id}`, {
+                            method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ active: !a.active }),
+                          });
+                          fetchAllAnnouncements();
+                        } catch { showMessage('Failed to update', 'error'); }
+                      }}
+                      style={{ background: a.active ? '#e0e0e0' : '#1d4ed8', color: a.active ? '#333' : '#fff', border: 'none', borderRadius: 6, padding: '0.4rem 0.8rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      {a.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('token');
+                          await fetch(`http://localhost:5000/api/announcements/${a._id}`, {
+                            method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+                          });
+                          fetchAllAnnouncements();
+                        } catch { showMessage('Failed to delete', 'error'); }
+                      }}
+                      style={{ background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, padding: '0.4rem 0.8rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 

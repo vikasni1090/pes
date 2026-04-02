@@ -1,129 +1,282 @@
-/* Action button styles for ExamList */
-.exam-action-btn {
-  border-radius: 8px;
-  color: #ffffff;
-  background: none;
-  font-size: 0.6rem;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  transition: box-shadow 0.2s, background 0.2s;
-}
+/* ExamList.css — improved styles */
 
-.exam-action-btn:hover {
-  background: #f3f3fa;
-  box-shadow: 0 2px 8px #e0e0f0;
-}
-
-@media (max-width: 700px) {
-  .exam-action-btn {
-    font-size: 0.5rem;
-    padding: 3px 6px;
-  }
-}
-
-@media (max-width: 500px) {
-  .exam-action-btn {
-    font-size: 0.45rem;
-    padding: 2px 4px;
-  }
-}
-
+/* ── Container ────────────────────────────────────────────────── */
 .exam-list-container {
-  margin-top: 2rem;
-  max-height: 100vh;
-  border: 2px solid #5c5470;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px #4b3c70;
-  background: #fff;
-  overflow: hidden;
+    margin-top: 2rem;
+    max-height: 100vh;
+    border: 2px solid #2563eb;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.18);
+    background: #fff;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
 }
 
+.exam-list-container:hover {
+    box-shadow: 0 6px 20px rgba(75, 60, 112, 0.26);
+}
+
+/* ── Title ────────────────────────────────────────────────────── */
 .exam-list-title {
-  color: #3f3d56;
-  font-weight: bold;
-  margin-bottom: 1rem;
+    color: #1e3a8a;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    font-size: 1.15rem;
+    letter-spacing: 0.01em;
 }
 
+/* ── Scrollable table wrapper ─────────────────────────────────── */
 .exam-list-table-wrapper {
-  max-height: 30vh;
-  overflow-y: auto;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #4b3c70 transparent;
+    max-height: 30vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #1d4ed8 transparent;
 }
 
+.exam-list-table-wrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.exam-list-table-wrapper::-webkit-scrollbar-thumb {
+    background-color: #b5a9d4;
+    border-radius: 4px;
+}
+.exam-list-table-wrapper::-webkit-scrollbar-track {
+    background-color: #f4f2fb;
+    border-radius: 4px;
+}
+
+/* ── Table ────────────────────────────────────────────────────── */
 .exam-list-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 12px;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
 }
 
 .exam-list-table th,
 .exam-list-table td {
-  padding: 12px;
-  text-align: center;
-  color: #3f3d56;
+    padding: 12px 14px;
+    text-align: center;
+    color: #1e3a8a;
 }
 
+/* Sticky header */
 .exam-list-table th {
-  background-color: #4b3c70;
-  color: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  border-right: 2px solid #fff;
+    background-color: #1d4ed8;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-right: 2px solid rgba(255, 255, 255, 0.25);
+    font-weight: 600;
+    font-size: 0.88rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .exam-list-table th:last-child {
-  border-right: none;
+    border-right: none;
 }
 
 .exam-list-table td {
-  border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #e8e4f0;
+    transition: background 0.15s ease;
+    font-size: 0.93rem;
 }
 
+/* Row hover highlight */
+.exam-list-table tbody tr:hover td {
+    background: rgba(102, 126, 234, 0.06);
+}
+
+.exam-list-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Zebra striping (subtle) */
+.exam-list-table tbody tr:nth-child(even) td {
+    background: #faf9fd;
+}
+.exam-list-table tbody tr:nth-child(even):hover td {
+    background: rgba(102, 126, 234, 0.08);
+}
+
+/* ── Status badges ────────────────────────────────────────────── */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Active / open */
+.status-badge.status-active {
+    background: #e6f9f0;
+    color: #15803d;
+}
+.status-badge.status-active::before {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px #bbf7d0;
+}
+
+/* Completed */
+.status-badge.status-completed {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+.status-badge.status-completed::before {
+    background: #7c3aed;
+    box-shadow: 0 0 0 2px #ddd6fe;
+}
+
+/* Pending / scheduled */
+.status-badge.status-pending {
+    background: #fef9e7;
+    color: #b45309;
+}
+.status-badge.status-pending::before {
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px #fde68a;
+}
+
+/* Closed / inactive */
+.status-badge.status-closed {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+.status-badge.status-closed::before {
+    background: #9ca3af;
+}
+
+/* ── Action button group ──────────────────────────────────────── */
 .exam-list-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-}
-
-@media (max-width: 900px) {
-  .exam-list-table {
-    font-size: 0.95rem;
-  }
-  .exam-list-title {
-    font-size: 1.1rem;
-    padding: 0.5rem;
-  }
-  .exam-list-actions {
+    display: flex;
     gap: 0.5rem;
-  }
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    align-items: center;
 }
 
-@media (max-width: 700px) {
-  .exam-list-table {
-    font-size: 0.9rem;
-  }
-  .exam-list-title {
+/* Individual action button */
+.exam-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border-radius: 8px;
+    color: #ffffff;
+    background: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 5px 10px;
+    border: 1.5px solid transparent;
+    transition: box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.exam-action-btn:hover {
+    background: #f3f3fa;
+    box-shadow: 0 3px 10px rgba(30, 58, 138, 0.18);
+    transform: translateY(-1px);
+    border-color: #d4c9f0;
+    color: #1d4ed8;
+}
+
+.exam-action-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* ── Empty state ──────────────────────────────────────────────── */
+.exam-list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    color: #9ca3af;
+    gap: 0.75rem;
+}
+
+.exam-list-empty-icon {
+    font-size: 2.8rem;
+    opacity: 0.45;
+}
+
+.exam-list-empty-text {
     font-size: 1rem;
-    padding: 0.3rem;
-  }
+    font-weight: 500;
+    color: #6b7280;
+    margin: 0;
 }
 
+.exam-list-empty-sub {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* ── Responsive — 900px ───────────────────────────────────────── */
+@media (max-width: 900px) {
+    .exam-list-table {
+        font-size: 0.95rem;
+    }
+    .exam-list-title {
+        font-size: 1.1rem;
+        padding: 0.5rem;
+    }
+    .exam-list-actions {
+        gap: 0.4rem;
+    }
+}
+
+/* ── Responsive — 700px ───────────────────────────────────────── */
+@media (max-width: 700px) {
+    .exam-list-table {
+        font-size: 0.9rem;
+    }
+    .exam-list-title {
+        font-size: 1rem;
+        padding: 0.3rem;
+    }
+    .exam-action-btn {
+        font-size: 0.6rem;
+        padding: 3px 7px;
+    }
+}
+
+/* ── Responsive — 500px ───────────────────────────────────────── */
 @media (max-width: 500px) {
-  .exam-list-table {
-    font-size: 0.8rem;
-  }
-  .exam-list-title {
-    font-size: 0.95rem;
-    padding: 0.2rem;
-  }
+    .exam-list-table {
+        font-size: 0.8rem;
+    }
+    .exam-list-title {
+        font-size: 0.95rem;
+        padding: 0.2rem;
+    }
+    .exam-action-btn {
+        font-size: 0.55rem;
+        padding: 2px 5px;
+    }
+    .exam-list-actions {
+        gap: 0.3rem;
+    }
 }

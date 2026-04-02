@@ -1354,3 +1354,43 @@ export const downloadIncentivesCSV = async (req, res) => {
     res.status(500).json({ message: 'Failed to generate incentives CSV!' });
   }
 };
+
+export const getPendingEnrollments = async (req, res) => {
+  try {
+    const teacherId = req.user._id;
+    // Get all batches this teacher manages
+    const batches = await Batch.find({ instructor: teacherId });
+    const batchIds = batches.map(b => b._id);
+
+    const enrollments = await Enrollment.find({ batch: { $in: batchIds }, status: 'pending' })
+      .populate('student', 'name email')
+      .populate({ path: 'batch', select: 'batchId', populate: { path: 'course', select: 'courseName courseId' } });
+
+    res.status(200).json(enrollments);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch pending enrollments' });
+  }
+};
+
+export const updateEnrollmentStatus = async (req, res) => {
+  try {
+    const { enrollmentId } = req.params;
+    const { action } = req.body; // 'approve' or 'reject'
+
+    const enrollment = await Enrollment.findById(enrollmentId);
+    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+
+    if (action === 'approve') {
+      enrollment.status = 'active';
+    } else if (action === 'reject') {
+      enrollment.status = 'dropped';
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use approve or reject.' });
+    }
+
+    await enrollment.save();
+    res.status(200).json({ message: `Enrollment ${action}d successfully` });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update enrollment status' });
+  }
+};

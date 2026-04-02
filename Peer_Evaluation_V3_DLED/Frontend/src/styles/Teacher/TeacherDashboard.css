@@ -1,5 +1,6 @@
-/* Responsive styles  */
+/* TeacherDashboard.css — improved styles */
 
+/* ── Reset & base ─────────────────────────────────────────────── */
 html, body, #root {
     height: 100%;
     width: 100%;
@@ -12,10 +13,12 @@ html, body, #root {
 body {
     background: none !important;
 }
+
+/* ── Background wrapper ───────────────────────────────────────── */
 .teacher-dashboard-bg {
     min-height: 100vh;
     width: 100vw;
-    background: linear-gradient(135deg, #ece9f7 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
     display: flex;
     position: fixed;
     top: 0;
@@ -25,102 +28,261 @@ body {
     box-sizing: border-box;
     overflow: hidden;
 }
+
+/* ── Layout container ─────────────────────────────────────────── */
 .teacher-dashboard-container {
     display: flex;
     min-height: 100vh;
     width: 100%;
     position: relative;
 }
+
+/* ── Sidebar ──────────────────────────────────────────────────── */
 .teacher-dashboard-sidebar {
     position: relative;
     top: 0;
     left: 0;
     height: auto;
     min-height: 100vh;
-    z-index: 1;
+    z-index: 100;
+    /* smooth open/close */
+    transition: width 0.3s ease, left 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
 }
+
+/* Pill-shaped nav items */
+.teacher-dashboard-sidebar button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    border: none;
+    border-radius: 999px;          /* pill shape */
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    background: transparent;
+    color: inherit;
+    transition: background 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+}
+
+.teacher-dashboard-sidebar button:hover {
+    background: rgba(59, 130, 246, 0.15);
+    padding-left: 1.3rem;
+    color: #1e3a8a;
+}
+
+/* Active nav item — gradient + left accent border */
+.teacher-dashboard-sidebar button.active,
+.teacher-dashboard-sidebar button[data-active="true"] {
+    background: linear-gradient(90deg, #3b82f620, #2563eb20);
+    border-left: 3px solid #3b82f6;
+    padding-left: calc(1rem - 3px);
+    color: #1e3a8a;
+    font-weight: 700;
+}
+
+/* ── Sidebar toggle button ────────────────────────────────────── */
 .sidebar-toggle-btn {
     display: none;
 }
+
+.sidebar-toggle-btn span {
+    display: block;
+    width: 30px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    transform-origin: center;
+}
+
+/* Animated hamburger → X when sidebar is open */
+.teacher-dashboard-bg.sidebar-open .sidebar-toggle-btn span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+.teacher-dashboard-bg.sidebar-open .sidebar-toggle-btn span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+.teacher-dashboard-bg.sidebar-open .sidebar-toggle-btn span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+/* ── Main content area ────────────────────────────────────────── */
 .teacher-dashboard-main {
     flex: 1;
     margin-left: 0;
-    transition: margin-left 0.3s;
-}
-@media (max-width: 900px) {
-    .teacher-dashboard-sidebar {
-    width: 220px;
-    padding: 1.5rem 0.75rem;
-    }
-    .teacher-dashboard-main {
-    margin-left: 220px;
-    padding: 1rem;
-    }
-}
-@media (max-width: 700px) {
-    .teacher-dashboard-sidebar {
-    left: -260px;
-    width: 220px;
-    border-radius: 0 20px 20px 0;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
-    transition: left 0.3s;
-    }
-    .teacher-dashboard-sidebar.open {
-    left: 0;
-    }
-    .sidebar-toggle-btn {
-    display: block;
-    position: fixed;
-    top: 1.2rem;
-    left: 1.2rem;
-    z-index: 1100;
-    background: #3f3d56;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.5rem 0.8rem;
-    cursor: pointer;
-    }
-    .teacher-dashboard-main {
-    margin-left: 0;
-    padding: 1rem;
-    transition: margin-left 0.3s;
-    }
-    /* .teacher-dashboard-main.sidebar-open {
-    } */
-}
-@media (max-width: 600px) {
-    .teacher-dashboard-content {
-    padding: 1rem;
-    max-width: 100%;
-    }
-    .teacher-dashboard-sidebar {
-    padding: 1rem 0.5rem;
-    width: 180px;
-    }
-}
-@media (max-width: 700px) {
-    div[style*="overflowY: 'auto'"]::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-    }
-
-    div[style*="overflowY: 'auto'"]::-webkit-scrollbar-thumb {
-    background-color: #d3d3d3; /* Light color for scrollbar thumb */
-    border-radius: 4px;
-    }
-
-    div[style*="overflowY: 'auto'"]::-webkit-scrollbar-track {
-    background-color: #f0f0f0; /* Light color for scrollbar track */
-    border-radius: 4px;
-    }
+    transition: margin-left 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
+/* ── Content card ─────────────────────────────────────────────── */
+.teacher-dashboard-content {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    transition: box-shadow 0.2s ease;
+}
+
+.teacher-dashboard-content:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Dashboard stat cards ─────────────────────────────────────── */
 .dashboard-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
 }
 
 .dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-6px);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* ── Tab navigation ───────────────────────────────────────────── */
+.tab-nav {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 2px solid #e0eaff;
+    margin-bottom: 1.5rem;
+}
+
+.tab-nav-item {
+    position: relative;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #6b7280;
+    border-radius: 8px 8px 0 0;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.tab-nav-item:hover {
+    color: #1e3a8a;
+    background: rgba(59, 130, 246, 0.06);
+}
+
+.tab-nav-item.active {
+    color: #2563eb;
+    font-weight: 700;
+}
+
+/* Gradient underline for active tab */
+.tab-nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    border-radius: 3px 3px 0 0;
+}
+
+/* ── Section card shadows ─────────────────────────────────────── */
+.section-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    background: #fff;
+    padding: 1.5rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.section-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Responsive — tablet ──────────────────────────────────────── */
+@media (max-width: 900px) {
+    .teacher-dashboard-sidebar {
+        width: 220px;
+        padding: 1.5rem 0.75rem;
+    }
+    .teacher-dashboard-main {
+        margin-left: 220px;
+        padding: 1rem;
+    }
+}
+
+/* ── Responsive — mobile ──────────────────────────────────────── */
+@media (max-width: 700px) {
+    .teacher-dashboard-sidebar {
+        position: fixed;
+        left: -260px;
+        width: 220px;
+        border-radius: 0 20px 20px 0;
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.1);
+        transition: left 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .teacher-dashboard-sidebar.open {
+        left: 0;
+        box-shadow: 6px 0 24px rgba(30, 58, 138, 0.22);
+    }
+
+    .sidebar-toggle-btn {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        position: fixed;
+        top: 1.2rem;
+        left: 1.2rem;
+        z-index: 1100;
+        background: #1e3a8a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 0.7rem;
+        cursor: pointer;
+        align-items: center;
+        transition: background 0.2s ease;
+    }
+
+    .sidebar-toggle-btn:hover {
+        background: #3b82f6;
+    }
+
+    .teacher-dashboard-main {
+        margin-left: 0;
+        padding: 1rem;
+        transition: margin-left 0.3s ease;
+    }
+
+    /* Scrollbar styling for inner scroll areas */
+    div[style*="overflowY"]::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    div[style*="overflowY"]::-webkit-scrollbar-thumb {
+        background-color: #93c5fd;
+        border-radius: 4px;
+    }
+    div[style*="overflowY"]::-webkit-scrollbar-track {
+        background-color: #eff6ff;
+        border-radius: 4px;
+    }
+}
+
+/* ── Responsive — small mobile ────────────────────────────────── */
+@media (max-width: 600px) {
+    .teacher-dashboard-content {
+        padding: 1rem;
+        max-width: 100%;
+    }
+    .teacher-dashboard-sidebar {
+        padding: 1rem 0.5rem;
+        width: 180px;
+    }
+    .dashboard-card {
+        min-width: 140px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 }

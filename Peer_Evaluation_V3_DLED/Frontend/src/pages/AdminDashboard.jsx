@@ -7,6 +7,7 @@ import { showMessage } from '../utils/Message';
 import { AppContext } from '../utils/AppContext';
 import { useContext } from 'react';
 import ProfileMenu from '../components/User/ProfileMenu';
+import AnnouncementBanner from '../components/AnnouncementBanner';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('home');
@@ -36,7 +37,20 @@ export default function AdminDashboard() {
     course: ''
   });
   const [counts, setCounts] = useState({ teachers: 0, courses: 0, students: 0 });
-  const { setRefreshApp } = useContext(AppContext);
+  const { setRefreshApp, darkMode, toggleDarkMode, announcement, announcementDismissed, dismissAnnouncement } = useContext(AppContext);
+  const [allAnnouncements, setAllAnnouncements] = useState([]);
+  const [newAnnouncementMsg, setNewAnnouncementMsg] = useState('');
+
+  const fetchAllAnnouncements = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/announcements', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) setAllAnnouncements(data);
+    } catch (err) { console.error(err); }
+  };
   const [courseId, setCourseId] = useState('');
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [batches, setBatches] = useState([]);
@@ -507,7 +521,7 @@ export default function AdminDashboard() {
       className={`admin-dashboard-bg${sidebarOpen ? ' sidebar-open' : ''}`}
       style={{
         minHeight: '100vh',
-        width: '100vw',
+        width: '100vw', 
         background: 'linear-gradient(135deg, #ece9f7 0%, #c3cfe2 100%)',
         display: 'flex',
         flexDirection: 'row',
@@ -533,7 +547,14 @@ export default function AdminDashboard() {
         display: 'flex',
         alignItems: 'center',
       }}>
-        <ProfileMenu user={user} onLogout={logout} onProfile={() => setActiveTab('profile')} />
+        <ProfileMenu
+          user={user}
+          onLogout={logout}
+          onProfile={() => setActiveTab('profile')}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          onAvatarUpdate={(url) => setUser(prev => ({ ...prev, profilePicture: url }))}
+        />
       </div>
 
       {/* Sidebar Toggle Button */}
@@ -582,6 +603,7 @@ export default function AdminDashboard() {
             <button onClick={() => setActiveTab('role')} style={buttonStyle(activeTab === 'role')}>🧑‍💼 Role Manager</button>
             <button onClick={() => setActiveTab('course')} style={buttonStyle(activeTab === 'course')}>📚 Course Manager</button>
             <button onClick={() => setActiveTab('batch')} style={buttonStyle(activeTab === 'batch')}>📘 Batch Manager</button>
+            <button onClick={() => { setActiveTab('announcements'); fetchAllAnnouncements(); }} style={buttonStyle(activeTab === 'announcements')}>📢 Announcements</button>
             <button onClick={logout} style={{ marginTop: 'auto', ...buttonStyle(false) }}>🚪 Logout</button>
           </>
         )}
@@ -595,8 +617,11 @@ export default function AdminDashboard() {
           marginLeft: 0,
           alignItems: 'stretch',
           justifyContent: 'center',
-        }}
+        }}  
       >
+        {announcement && !announcementDismissed && (
+          <AnnouncementBanner message={announcement.message} onDismiss={dismissAnnouncement} />
+        )}
         <div className="admin-dashboard-content" style={{
           ...contentStyle,
           background: 'rgba(255,255,255,0.92)',
@@ -669,6 +694,80 @@ export default function AdminDashboard() {
                 >
                   Change Password
                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'announcements' && (
+            <div style={{ display: 'flex', flexDirection: 'column', color: '#3f3d56', gap: '1.5rem' }}>
+              <h2 style={{ ...sectionHeading, marginTop: 0, marginBottom: '1rem' }}>Announcements</h2>
+
+              {/* Post new announcement */}
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <textarea
+                  value={newAnnouncementMsg}
+                  onChange={e => setNewAnnouncementMsg(e.target.value)}
+                  placeholder="Type an announcement..."
+                  rows={3}
+                  style={{ flex: 1, padding: '0.75rem', borderRadius: 8, border: '1.5px solid #5c5470', fontSize: '1rem', resize: 'vertical', fontFamily: 'inherit' }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!newAnnouncementMsg.trim()) return;
+                    try {
+                      const token = localStorage.getItem('token');
+                      const res = await fetch('http://localhost:5000/api/announcements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ message: newAnnouncementMsg }),
+                      });
+                      if (res.ok) { setNewAnnouncementMsg(''); fetchAllAnnouncements(); showMessage('Announcement posted!', 'success'); }
+                      else showMessage('Failed to post announcement', 'error');
+                    } catch { showMessage('Failed to post announcement', 'error'); }
+                  }}
+                  style={{ background: '#4b3c70', color: '#fff', border: 'none', borderRadius: 8, padding: '0.75rem 1.5rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Post
+                </button>
+              </div>
+
+              {/* Existing announcements */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', maxHeight: '55vh' }}>
+                {allAnnouncements.length === 0 && <p style={{ color: '#888' }}>No announcements yet.</p>}
+                {allAnnouncements.map(a => (
+                  <div key={a._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', border: '1.5px solid #e3e6f0', borderRadius: 8, background: a.active ? '#f5f3ff' : '#f9f9f9' }}>
+                    <span style={{ flex: 1, color: a.active ? '#3f3d56' : '#aaa', textDecoration: a.active ? 'none' : 'line-through' }}>{a.message}</span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('token');
+                          await fetch(`http://localhost:5000/api/announcements/${a._id}`, {
+                            method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ active: !a.active }),
+                          });
+                          fetchAllAnnouncements();
+                        } catch { showMessage('Failed to update', 'error'); }
+                      }}
+                      style={{ background: a.active ? '#e0e0e0' : '#4b3c70', color: a.active ? '#333' : '#fff', border: 'none', borderRadius: 6, padding: '0.4rem 0.8rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      {a.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem('token');
+                          await fetch(`http://localhost:5000/api/announcements/${a._id}`, {
+                            method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+                          });
+                          fetchAllAnnouncements();
+                        } catch { showMessage('Failed to delete', 'error'); }
+                      }}
+                      style={{ background: '#c0392b', color: '#fff', border: 'none', borderRadius: 6, padding: '0.4rem 0.8rem', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}

@@ -56,6 +56,14 @@ export const addCourse = async (req, res) => {
 
     await newCourse.save();
 
+    // Auto-create a default batch for this course
+    const defaultBatch = new Batch({
+      batchId: `${courseId}-Default`,
+      instructor: req.user._id,
+      course: newCourse._id,
+    });
+    await defaultBatch.save();
+
     res.status(200).json({ message: 'Course added successfully!' });
   } catch (error) {
     res.status(500).json({ message: 'Server error. Please try again later!' });

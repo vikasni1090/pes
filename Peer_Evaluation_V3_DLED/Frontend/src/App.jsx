@@ -16,7 +16,7 @@ import { useContext, useEffect } from 'react'
 import { AppContext } from './utils/AppContext'
 
 function App() {
-  const { refreshApp } = useContext(AppContext);
+  const { refreshApp, setRefreshApp } = useContext(AppContext);
 
   useEffect(() => {
     if (refreshApp) {

@@ -23,6 +23,8 @@ import {
   studentsEnroll,
   updateEvaluation,
   updateExam,
+  getPendingEnrollments,
+  updateEnrollmentStatus,
 } from "../controllers/teacherController.js";
 import upload from "../utils/fileUpload.js";
 
@@ -134,5 +136,7 @@ router.get(
   adminOrTeacherOnly,
   downloadIncentivesCSV
 );
+router.get("/pending-enrollments", protect, adminOrTeacherOnly, getPendingEnrollments);
+router.put("/enrollment/:enrollmentId/status", protect, adminOrTeacherOnly, updateEnrollmentStatus);
 
 export default router;
